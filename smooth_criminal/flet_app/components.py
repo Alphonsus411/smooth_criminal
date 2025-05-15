@@ -22,8 +22,8 @@ def function_table() -> ft.DataTable:
 
 def action_buttons(refresh_fn, clear_fn, export_fn, graph_fn) -> ft.Row:
     return ft.Row([
-        ft.ElevatedButton("🔄 Refresh", on_click=refresh_fn, icon=ft.icons.REFRESH),
-        ft.ElevatedButton("🧼 Limpiar historial", on_click=clear_fn, icon=ft.icons.DELETE),
-        ft.ElevatedButton("💾 Exportar CSV", on_click=export_fn, icon=ft.icons.DOWNLOAD),
-        ft.ElevatedButton("📈 Ver gráfico", on_click=graph_fn, icon=ft.icons.INSERT_CHART)
+        ft.ElevatedButton("🔄 Refresh", on_click=refresh_fn, icon=ft.Icons.REFRESH),
+        ft.ElevatedButton("🧼 Limpiar historial", on_click=clear_fn, icon=ft.Icons.DELETE),
+        ft.ElevatedButton("💾 Exportar CSV", on_click=export_fn, icon=ft.Icons.DOWNLOAD),
+        ft.ElevatedButton("📈 Ver gráfico", on_click=graph_fn, icon=ft.Icons.INSERT_CHART)
     ], spacing=15)

@@ -1,5 +1,5 @@
 import statistics
-from asyncio import as_completed
+from concurrent.futures import as_completed
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Pool, cpu_count
 import inspect

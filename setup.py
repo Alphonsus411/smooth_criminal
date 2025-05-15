@@ -1,32 +1,25 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="smooth-criminal",
-    version="0.2.0",
-    description="⚡ Acelerador inteligente de scripts Python con estilo Michael Jackson.",
+    name="smooth_criminal",
+    version="0.2.1",
+    author="Adolfo González",
+    author_email="tucorreo@example.com",
+    description="Dashboard de análisis de rendimiento con decoradores inteligentes",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
-    author="Adolfo",
-    author_email="tucorreo@example.com",
-    url="https://github.com/Alphonsus411/smooth-criminal",
+    url="https://github.com/Alphonsus411/smooth_criminal",  # Cambiar si aplica
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        "numpy",
-        "numba",
-        "rich",
-        "matplotlib",
-        "flet",
+        "flet>=0.19.0",
+        "pandas",
+        "tabulate",
+        "matplotlib"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    entry_points={
-        "console_scripts": [
-            "smooth-criminal = smooth_criminal.cli:main"
-        ]
-    },
-    python_requires='>=3.8',
+    python_requires=">=3.8",
 )

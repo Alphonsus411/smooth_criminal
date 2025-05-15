@@ -12,6 +12,7 @@
 **Smooth Criminal** es una librería de Python para acelerar funciones y scripts automáticamente usando:
 - 🧠 [Numba](https://numba.pydata.org/)
 - ⚡ Asyncio y threading
+- 📊 Dashboard visual con [Flet](https://flet.dev)
 - 🧪 Benchmarks y profiling
 - 🎶 Estilo, carisma y mensajes inspirados en MJ
 
@@ -34,21 +35,43 @@
 
 ---
 
+## 🧠 Dashboard visual
+
+Ejecuta el panel interactivo para ver métricas de tus funciones decoradas:
+
+```bash
+python -m smooth_criminal.dashboard
+```
+O bien:
+
+````bash
+python scripts/example_flet_dashboard.py
+````
+
+- Tabla con tiempos, decoradores y puntuaciones
+
+- Botones para exportar CSV, limpiar historial o ver gráfico
+
+- Interfaz elegante con Flet (modo oscuro)
+
 ## ⚙️ Instalación
 
-```bash
+````bash
 pip install smooth-criminal
-```
+````
 
-O si estás desarrollando localmente:
+O para desarrollo local:
 
-```bash
+````bash
+git clone https://github.com/Alphonsus411/smooth_criminal.git
+cd smooth_criminal
 pip install -e .
-```
+````
+
 
 ## 💃 Ejemplo rápido
 
-```python
+````python
 from smooth_criminal import smooth, thriller
 
 @thriller
@@ -57,15 +80,15 @@ def square(n):
     return [i * i for i in range(n)]
 
 print(square(10))
-
-```
+````
 
 ## 🧪 CLI interactiva
 
-```bash
+````bash
 smooth-criminal analyze my_script.py
-```
-Esto analizará tu código buscando funciones lentas, bucles, range(), y más.
+````
+
+Esto analizará tu código buscando funciones lentas, bucles, range(), etc.
 
 ## 📚 Documentación
 
@@ -75,10 +98,12 @@ Próximamente en ReadTheDocs…
 
 MIT © Adolfo González
 
+
 ## 🎤 Créditos
 
 - Michael Jackson por la inspiración musical 🕺
 
 - Numba, NumPy, asyncio por la base técnica
 
+- Flet por el dashboard elegante
 
