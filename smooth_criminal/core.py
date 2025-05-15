@@ -2,6 +2,8 @@ import statistics
 from asyncio import as_completed
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Pool, cpu_count
+import inspect
+import ast
 
 from numba import jit
 import numpy as np
@@ -9,6 +11,8 @@ import asyncio
 import logging
 import time
 from functools import wraps
+
+from smooth_criminal.memory import log_execution_stats
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SmoothCriminal")
@@ -200,3 +204,71 @@ def profile_it(func, args=(), kwargs={}, repeat=5, parallel=False):
         "runs": times,
     }
 
+def auto_boost(workers=4, fallback=None):
+    """
+    Decorador inteligente que detecta patrones y aplica decoradores óptimos:
+    - Bucle + range() → @smooth
+    - Entrada tipo list o array → @jam
+    - Fallback si falla → @beat_it
+    Además registra los resultados para aprendizaje posterior.
+    """
+    def decorator(func):
+        use_jam = False
+        use_smooth = False
+
+        try:
+            source = inspect.getsource(func)
+            tree = ast.parse(source)
+
+            for node in ast.walk(tree):
+                if isinstance(node, ast.For):
+                    if isinstance(node.iter, ast.Call) and getattr(node.iter.func, 'id', '') == 'range':
+                        use_smooth = True
+                elif isinstance(node, ast.Call) and getattr(node.func, 'id', '') in ['sum', 'map', 'filter']:
+                    use_smooth = True
+
+        except Exception as e:
+            logger.warning(f"auto_boost: AST inspection failed: {e}")
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            nonlocal use_jam
+            input_type = type(args[0]) if args else None
+
+            if len(args) == 1 and isinstance(args[0], (list, tuple)):
+                use_jam = True
+
+            boosted = func
+            decorator_used = "none"
+
+            if fallback:
+                boosted = beat_it(fallback)(boosted)
+                decorator_used = "@beat_it"
+
+            if use_smooth:
+                boosted = smooth(boosted)
+                decorator_used = "@smooth"
+                logger.info("🧠 auto_boost: Applied @smooth")
+            elif use_jam:
+                boosted = jam(workers=workers)(boosted)
+                decorator_used = "@jam"
+                logger.info("🎶 auto_boost: Applied @jam")
+
+            boosted = thriller(boosted)
+
+            # Medición de tiempo para logging de memoria
+            start = time.perf_counter()
+            result = boosted(*args, **kwargs)
+            end = time.perf_counter()
+
+            log_execution_stats(
+                func_name=func.__name__,
+                input_type=input_type,
+                decorator_used=decorator_used,
+                duration=round(end - start, 6)
+            )
+
+            return result
+
+        return wrapper
+    return decorator
