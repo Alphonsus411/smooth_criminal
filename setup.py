@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="smooth_criminal",
-    version="0.2.1",
+    version="0.3.0",
     author="Adolfo González",
     author_email="tucorreo@example.com",
     description="Dashboard de análisis de rendimiento con decoradores inteligentes",
