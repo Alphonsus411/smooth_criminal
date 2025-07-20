@@ -17,6 +17,11 @@ setup(
         "tabulate",
         "matplotlib"
     ],
+    entry_points={
+        "console_scripts": [
+            "smooth-criminal=smooth_criminal.cli:main",
+        ]
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
