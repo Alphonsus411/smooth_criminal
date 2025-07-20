@@ -121,3 +121,7 @@ def handle_score(func_name):
         console.print(summary)
         color = "green" if score >= 80 else "yellow" if score >= 50 else "red"
         console.print(f"[bold {color}]Optimization Score: {score}/100[/bold {color}]")
+
+
+if __name__ == "__main__":
+    main()

@@ -20,14 +20,21 @@ logger = logging.getLogger("SmoothCriminal")
 def smooth(func):
     try:
         jit_func = jit(nopython=True, cache=True)(func)
+
         def wrapper(*args, **kwargs):
             logger.info("You've been hit by... a Smooth Criminal!")
-            return jit_func(*args, **kwargs)
+            try:
+                return jit_func(*args, **kwargs)
+            except Exception:
+                logger.warning("Beat it! Numba failed at runtime. Falling back.")
+                return func(*args, **kwargs)
+
         return wrapper
     except Exception:
         def fallback(*args, **kwargs):
             logger.warning("Beat it! Numba failed. Falling back.")
             return func(*args, **kwargs)
+
         return fallback
 
 def moonwalk(func):
