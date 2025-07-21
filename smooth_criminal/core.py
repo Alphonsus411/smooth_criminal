@@ -38,9 +38,21 @@ def smooth(func):
         return fallback
 
 def moonwalk(func):
+    """Permite ejecutar funciones sincrónicas o asíncronas de forma asíncrona."""
+
+    @wraps(func)
     async def wrapper(*args, **kwargs):
         logger.info("Moonwalk complete — your async function is now gliding!")
-        return await func(*args, **kwargs)
+
+        if inspect.iscoroutinefunction(func):
+            return await func(*args, **kwargs)
+
+        if hasattr(asyncio, "to_thread"):
+            return await asyncio.to_thread(func, *args, **kwargs)
+
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, func, *args, **kwargs)
+
     return wrapper
 
 def thriller(func):
