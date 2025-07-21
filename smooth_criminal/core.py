@@ -192,7 +192,9 @@ def _run_once(args):
     end = time.perf_counter()
     return end - start
 
-def profile_it(func, args=(), kwargs={}, repeat=5, parallel=False):
+def profile_it(func, args=(), kwargs=None, repeat=5, parallel=False):
+    if kwargs is None:
+        kwargs = {}
     """
     Ejecuta la función varias veces para obtener estadísticas de rendimiento.
     Si parallel=True, ejecuta en múltiples procesos.

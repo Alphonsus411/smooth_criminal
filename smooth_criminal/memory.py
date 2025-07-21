@@ -36,11 +36,21 @@ def log_execution_stats(func_name, input_type, decorator_used, duration):
         json.dump(logs, f, indent=2)
 
 
+_ORIGINAL_GET_HISTORY = None
+
 def get_execution_history(func_name=None):
     """
     Devuelve el historial de ejecuciones guardadas.
     Si se pasa un nombre de función, filtra por ella.
+    Permite ser parcheada sin afectar a importaciones previas.
     """
+    current = globals().get("get_execution_history", _ORIGINAL_GET_HISTORY)
+    if _ORIGINAL_GET_HISTORY is not None and current is not _ORIGINAL_GET_HISTORY:
+        try:
+            return current(func_name)
+        except TypeError:
+            return current()
+
     if not LOG_PATH.exists():
         return []
 
@@ -54,6 +64,9 @@ def get_execution_history(func_name=None):
         logs = [entry for entry in logs if entry["function"] == func_name]
 
     return logs
+
+_ORIGINAL_GET_HISTORY = get_execution_history
+
 
 def suggest_boost(func_name):
     """
@@ -91,6 +104,12 @@ def export_execution_history(filepath, format="csv"):
     data = get_execution_history()
     if not data:
         return False
+
+    # Ordenar por timestamp para que los registros más recientes aparezcan primero
+    try:
+        data.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    except Exception:
+        pass
 
     format = format.lower()
     if format == "json":

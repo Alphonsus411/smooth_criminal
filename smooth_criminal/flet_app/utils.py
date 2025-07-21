@@ -23,8 +23,10 @@ def calcular_score(durations: list, decorators: set) -> int:
 def formatear_tiempo(segundos: float) -> str:
     """
     Devuelve el tiempo con 6 decimales y 's' al final.
+    Usa truncamiento para evitar redondeo.
     """
-    return f"{segundos:.6f}s"
+    trunc = int(segundos * 1_000_000) / 1_000_000
+    return f"{trunc:.6f}s"
 
 def export_filename(base: str = "smooth_export", ext: str = "csv") -> str:
     """
