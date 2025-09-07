@@ -6,7 +6,12 @@ from smooth_criminal.memory import (
     build_summary,
     calcular_score,
 )
-from smooth_criminal.flet_app.components import info_panel, function_table, action_buttons
+from smooth_criminal.flet_app.components import (
+    info_panel,
+    function_table,
+    action_buttons,
+    moonwalk_animation,
+)
 from smooth_criminal.flet_app.utils import formatear_tiempo, export_filename
 
 def main_view(page: ft.Page):
@@ -46,7 +51,14 @@ def main_view(page: ft.Page):
             msg.value = "No hay historial para exportar."
         page.update()
 
+    def trigger_moonwalk(e):
+        moonwalk_animation(page)
+        moonwalk_switch.value = False
+        page.update()
+
     btns = action_buttons(refresh, clear, export, lambda e: None)
+    moonwalk_switch = ft.Switch(label="Moonwalk", on_change=trigger_moonwalk)
+    btns.controls.append(moonwalk_switch)
 
     page.add(
         ft.Text("🎩 Smooth Criminal Dashboard", size=28, weight="bold", color="purple"),

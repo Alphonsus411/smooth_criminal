@@ -1,3 +1,4 @@
+import asyncio
 import flet as ft
 
 def info_panel(text: str, color="blue") -> ft.Container:
@@ -30,3 +31,29 @@ def action_buttons(refresh_fn, clear_fn, export_fn, graph_fn) -> ft.Row:
         ft.ElevatedButton("💾 Exportar MD", on_click=lambda e: export_fn("md"), icon=ft.Icons.DOWNLOAD),
         ft.ElevatedButton("📈 Ver gráfico", on_click=graph_fn, icon=ft.Icons.INSERT_CHART)
     ], spacing=15)
+
+
+def moonwalk_animation(page: ft.Page, duration: int = 800) -> None:
+    """Desplaza un ícono de MJ por la pantalla y limpia al finalizar."""
+
+    dancer = ft.Text("🕺", size=40)
+    anim = ft.AnimatedContainer(
+        content=dancer,
+        width=40,
+        height=40,
+        left=-50,
+        top=page.height / 2,
+        animate_position=ft.animation.Animation(duration, "ease"),
+    )
+    page.overlay.append(anim)
+    page.update()
+
+    anim.left = page.width
+    anim.update()
+
+    async def _cleanup():
+        await asyncio.sleep(duration / 1000)
+        page.overlay.remove(anim)
+        await page.update_async()
+
+    page.run_task(_cleanup)
