@@ -27,7 +27,7 @@
 | `@guvectorized`        | Generaliza ufuncs con *fallback* seguro               |
 | `@moonwalk`             | Convierte funciones en corutinas `async` sin esfuerzo |
 | `@thriller`             | Benchmark antes y después (con ritmo)                 |
-| `@jam(workers=n)`       | Paralelismo automático con ThreadPoolExecutor         |
+| `@jam(workers=n, backend="thread|process|async")` | Paralelismo con hilos, procesos o asyncio (cola dinámica) |
 | `@black_or_white(mode)` | Optimiza tipos numéricos (`float32` vs `float64`)     |
 | `@bad`                  | Modo de optimización agresiva (`fastmath`)            |
 | `@beat_it`              | Fallback automático si algo falla                     |
@@ -106,6 +106,20 @@ def square(n):
 
 print(square(10))
 ````
+
+### 🎷 Paralelismo con `jam`
+
+```python
+from smooth_criminal.core import jam
+
+@jam(workers=4, backend="process")
+def cube(x):
+    return x ** 3
+
+print(cube([1, 2, 3]))
+
+# También disponible backend="thread" (por defecto) o backend="async"
+```
 
 ## 🚧 Modo bad_and_dangerous
 
