@@ -1,3 +1,4 @@
+import pytest
 from smooth_criminal.flet_app.utils import export_filename
 
 def test_export_filename_default():
@@ -6,10 +7,12 @@ def test_export_filename_default():
     assert name.endswith(".csv")
     assert len(name) > 20
 
-def test_export_filename_custom_base_and_ext():
-    name = export_filename(base="logfile", ext="json")
+
+@pytest.mark.parametrize("ext", ["json", "xlsx", "md"])
+def test_export_filename_custom_base_and_ext(ext):
+    name = export_filename(base="logfile", ext=ext)
     assert name.startswith("logfile_")
-    assert name.endswith(".json")
+    assert name.endswith(f".{ext}")
 
 def test_export_filename_uniqueness():
     name1 = export_filename()

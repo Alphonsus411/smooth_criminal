@@ -24,6 +24,9 @@ def action_buttons(refresh_fn, clear_fn, export_fn, graph_fn) -> ft.Row:
     return ft.Row([
         ft.ElevatedButton("🔄 Refresh", on_click=refresh_fn, icon=ft.Icons.REFRESH),
         ft.ElevatedButton("🧼 Limpiar historial", on_click=clear_fn, icon=ft.Icons.DELETE),
-        ft.ElevatedButton("💾 Exportar CSV", on_click=export_fn, icon=ft.Icons.DOWNLOAD),
+        ft.ElevatedButton("💾 Exportar CSV", on_click=lambda e: export_fn("csv"), icon=ft.Icons.DOWNLOAD),
+        ft.ElevatedButton("💾 Exportar JSON", on_click=lambda e: export_fn("json"), icon=ft.Icons.DOWNLOAD),
+        ft.ElevatedButton("💾 Exportar XLSX", on_click=lambda e: export_fn("xlsx"), icon=ft.Icons.DOWNLOAD),
+        ft.ElevatedButton("💾 Exportar MD", on_click=lambda e: export_fn("md"), icon=ft.Icons.DOWNLOAD),
         ft.ElevatedButton("📈 Ver gráfico", on_click=graph_fn, icon=ft.Icons.INSERT_CHART)
     ], spacing=15)

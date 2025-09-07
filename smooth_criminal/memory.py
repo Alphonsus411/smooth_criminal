@@ -44,7 +44,7 @@ class StorageBackend(ABC):
         """Limpia por completo el historial."""
 
     def export_execution_history(self, filepath, format: str = "csv") -> bool:
-        """Exporta el historial a CSV o JSON."""
+        """Exporta el historial a CSV, JSON, XLSX o Markdown."""
         data = self.get_execution_history()
         if not data:
             return False
@@ -55,17 +55,40 @@ class StorageBackend(ABC):
             pass
 
         format = format.lower()
+        keys = ["function", "input_type", "decorator", "duration", "timestamp"]
         if format == "json":
             with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
         elif format == "csv":
-            keys = ["function", "input_type", "decorator", "duration", "timestamp"]
             with open(filepath, "w", newline="", encoding="utf-8") as f:
                 writer = csv.DictWriter(f, fieldnames=keys)
                 writer.writeheader()
                 writer.writerows(data)
+        elif format == "xlsx":
+            try:
+                from openpyxl import Workbook
+            except Exception as exc:  # pragma: no cover - se captura en pruebas
+                raise RuntimeError(
+                    "openpyxl es requerido para exportar a XLSX"
+                ) from exc
+
+            wb = Workbook()
+            ws = wb.active
+            ws.append(keys)
+            for row in data:
+                ws.append([row.get(k, "") for k in keys])
+            wb.save(filepath)
+        elif format == "md":
+            with open(filepath, "w", encoding="utf-8") as f:
+                header = "| " + " | ".join(keys) + " |\n"
+                separator = "|" + " --- |" * len(keys) + "\n"
+                f.write(header)
+                f.write(separator)
+                for row in data:
+                    line = "| " + " | ".join(str(row.get(k, "")) for k in keys) + " |\n"
+                    f.write(line)
         else:
-            raise ValueError("Formato no soportado: usa 'csv' o 'json'.")
+            raise ValueError("Formato no soportado: usa 'csv', 'json', 'xlsx' o 'md'.")
 
         return True
 
