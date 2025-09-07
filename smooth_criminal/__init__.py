@@ -15,6 +15,7 @@ from .core import (
     dangerous,
     bad_and_dangerous,
     profile_it,
+    mj_mode,
 )
 
 from .benchmark import benchmark_jam, detect_fastest_backend
@@ -32,6 +33,7 @@ __all__ = [
     "dangerous",
     "bad_and_dangerous",
     "profile_it",
+    "mj_mode",
     "benchmark_jam",
     "detect_fastest_backend",
     "__version__",

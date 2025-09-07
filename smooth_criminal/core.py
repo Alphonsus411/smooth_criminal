@@ -4,6 +4,7 @@ import inspect
 import ast
 import sys
 import os
+import random
 
 from numba import jit, vectorize as nb_vectorize, guvectorize as nb_guvectorize
 import numpy as np
@@ -99,6 +100,21 @@ def play_mj_effect(improvement: float, mj_mode: bool | None = None, *, threshold
 T = TypeVar("T")
 A = TypeVar("A")
 P = ParamSpec("P")
+
+
+def mj_mode(func: Callable[P, T]) -> Callable[P, T]:
+    """Aplica al azar un decorador icónico de MJ y muestra un mensaje."""
+
+    options = [
+        (smooth, "🕺 Hee-Hee! You're now smooth."),
+        (bad(), "😎 Who's bad? You're bad!"),
+        (thriller, "🎬 It's Thriller time!"),
+        (jam(workers=4), "🥁 Jam session with 4 workers!"),
+    ]
+
+    decorator, message = random.choice(options)
+    logger.info(message)
+    return decorator(func)
 
 
 def _process_worker(module_name: str, func_name: str, q) -> List[T]:
