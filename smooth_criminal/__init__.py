@@ -12,3 +12,5 @@ from .core import (
     bad_and_dangerous,
     profile_it,
 )
+
+from .benchmark import benchmark_jam, detect_fastest_backend
