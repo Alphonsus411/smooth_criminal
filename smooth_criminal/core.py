@@ -1,9 +1,8 @@
 import statistics
-from concurrent.futures import as_completed
-from concurrent.futures import ThreadPoolExecutor
-from multiprocessing import Pool, cpu_count
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 import inspect
 import ast
+import sys
 
 from numba import jit, vectorize as nb_vectorize, guvectorize as nb_guvectorize
 import numpy as np
@@ -36,6 +35,26 @@ logger = logging.getLogger("SmoothCriminal")
 T = TypeVar("T")
 A = TypeVar("A")
 P = ParamSpec("P")
+
+
+def _process_worker(module_name: str, func_name: str, q) -> List[T]:
+    from queue import Empty
+    import importlib
+
+    module = importlib.import_module(module_name)
+    func: Callable[[A], T] = getattr(module, func_name)
+
+    local_results: List[T] = []
+    while True:
+        try:
+            arg = q.get_nowait()
+        except Empty:
+            break
+        try:
+            local_results.append(func(arg))
+        except Exception as e:
+            logger.warning(f"Worker failed on input {arg}: {e}")
+    return local_results
 
 def smooth(func: Callable[P, T]) -> Callable[P, T]:
     """Compila ``func`` con Numba para acelerar su ejecución.
@@ -224,40 +243,120 @@ def thriller(func: Callable[P, T]) -> Callable[P, T]:
 
     return wrapper
 
-def jam(workers: int = 4) -> Callable[[Callable[[A], T]], Callable[[Sequence[A]], List[T]]]:
+def jam(
+    workers: int = 4,
+    *,
+    backend: Literal["thread", "process", "async"] = "thread",
+) -> Callable[[Callable[[A], T]], Callable[[Sequence[A]], Any]]:
     """Ejecuta ``func`` en paralelo sobre una secuencia de argumentos.
+
+    Parámetros
+    ----------
+    workers: int
+        Número de *workers* concurrentes.
+    backend: {"thread", "process", "async"}
+        Mecanismo de paralelización a utilizar.
 
     Ejemplo
     -------
     >>> import logging
     >>> logging.getLogger("SmoothCriminal").setLevel(logging.CRITICAL)
-    >>> @jam(workers=2)
+    >>> @jam(workers=2, backend="thread")
     ... def cuadrado(x: int) -> int:
     ...     return x * x
     >>> sorted(cuadrado([1, 2, 3]))
     [1, 4, 9]
     """
 
-    def decorator(func: Callable[[A], T]) -> Callable[[Sequence[A]], List[T]]:
-        @wraps(func)
-        def wrapper(args_list: Sequence[A]) -> List[T]:
+    def decorator(func: Callable[[A], T]) -> Callable[[Sequence[A]], Any]:
+        if backend == "async":
+            if inspect.iscoroutinefunction(func):
+                async def async_wrapper(args_list: Sequence[A]) -> List[T]:
+                    logger.info(
+                        f"🎶 Async jam session with {workers} workers (async func)"
+                    )
+                    tasks = [func(arg) for arg in args_list]
+                    return await asyncio.gather(*tasks)
+
+                return wraps(func)(async_wrapper)
+
+            async def async_wrapper(args_list: Sequence[A]) -> List[T]:
+                logger.info(
+                    f"🎶 Async jam session with {workers} workers (sync func)"
+                )
+                loop = asyncio.get_event_loop()
+                tasks = [loop.run_in_executor(None, func, arg) for arg in args_list]
+                return await asyncio.gather(*tasks)
+
+            return wraps(func)(async_wrapper)
+
+        module_name = func.__module__
+        func_name = func.__name__
+        if backend == "process":
+            module = sys.modules.get(module_name)
+            orig_name = f"__jam_orig_{func_name}"
+            setattr(module, orig_name, func)
+            target_name = orig_name
+        else:
+            target_name = func_name
+
+        def thread_backend(args_list: Sequence[A]) -> List[T]:
             logger.info(
-                f"🎶 Don't stop 'til you get enough... workers! (x{workers})"
+                f"🎶 Don't stop 'til you get enough... workers! (x{workers}, backend={backend})"
             )
             results: List[T] = []
-            with ThreadPoolExecutor(max_workers=workers) as executor:
-                future_to_arg = {executor.submit(func, arg): arg for arg in args_list}
-                for future in as_completed(future_to_arg):
-                    try:
-                        result = future.result()
-                        results.append(result)
-                    except Exception as e:
-                        logger.warning(
-                            f"Worker failed on input {future_to_arg[future]}: {e}"
-                        )
-            return results
 
-        return wrapper
+            if backend == "thread":
+                from queue import Queue, Empty
+                import threading
+
+                q: Queue = Queue()
+                for arg in args_list:
+                    q.put(arg)
+
+                lock = threading.Lock()
+
+                def worker() -> None:
+                    while True:
+                        try:
+                            arg = q.get_nowait()
+                        except Empty:
+                            break
+                        try:
+                            res = func(arg)
+                            with lock:
+                                results.append(res)
+                        except Exception as e:
+                            logger.warning(f"Worker failed on input {arg}: {e}")
+
+                with ThreadPoolExecutor(max_workers=workers) as executor:
+                    futures = [executor.submit(worker) for _ in range(workers)]
+                    for future in as_completed(futures):
+                        future.result()
+
+                return results
+
+            if backend == "process":
+                from multiprocessing import Manager
+
+                manager = Manager()
+                q = manager.Queue()
+                for arg in args_list:
+                    q.put(arg)
+
+                with ProcessPoolExecutor(max_workers=workers) as executor:
+                    futures = [
+                        executor.submit(_process_worker, module_name, target_name, q)
+                        for _ in range(workers)
+                    ]
+                    for future in as_completed(futures):
+                        results.extend(future.result())
+
+                return results
+
+            raise ValueError(f"Unknown backend: {backend}")
+
+        return wraps(func)(thread_backend)
 
     return decorator
 

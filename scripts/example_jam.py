@@ -3,7 +3,7 @@ import os
 
 from rich.logging import RichHandler
 
-from smooth_criminal.core import auto_boost
+from smooth_criminal.core import jam
 
 
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -18,7 +18,7 @@ logging.basicConfig(
 
 logger = logging.getLogger("SmoothCriminal")
 
-@auto_boost(workers=4)
+@jam(workers=4, backend="thread")  # Cambia backend a "process" o "async" según necesidad
 def double(x):
     return x * 2
 
