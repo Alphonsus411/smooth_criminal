@@ -9,6 +9,11 @@ setup(
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/Alphonsus411/smooth_criminal",  # Cambiar si aplica
+    project_urls={
+        "Documentación": "https://smooth-criminal.readthedocs.io/en/latest/",
+        "Código fuente": "https://github.com/Alphonsus411/smooth_criminal",
+        "Tracker": "https://github.com/Alphonsus411/smooth_criminal/issues",
+    },
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
@@ -28,6 +33,7 @@ setup(
     },
     classifiers=[
         "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.8",
