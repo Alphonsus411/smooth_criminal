@@ -41,17 +41,28 @@ def benchmark_jam(
 
     metrics: List[Dict[str, Any]] = []
     for backend in backends:
+        metric: Dict[str, Any] = {"backend": backend, "success": False}
         wrapped = jam(workers=len(args), backend=backend)(func)
         start = time.perf_counter()
-        if backend == "async":
-            asyncio.run(wrapped(args))
+        try:
+            if backend == "async":
+                asyncio.run(wrapped(args))
+            else:
+                wrapped(args)
+        except Exception as exc:  # pragma: no cover - surfaces in tests
+            metric["error"] = str(exc)
         else:
-            wrapped(args)
-        end = time.perf_counter()
-        metrics.append({"backend": backend, "duration": end - start})
+            end = time.perf_counter()
+            metric.update({"duration": end - start, "success": True})
+        metrics.append(metric)
 
-    fastest = min(metrics, key=lambda m: m["duration"])  # type: ignore[arg-type]
-    return {"metrics": metrics, "fastest": fastest["backend"]}
+    successful = [m for m in metrics if m.get("success")]
+    fastest = (
+        min(successful, key=lambda m: m["duration"])["backend"]
+        if successful
+        else None
+    )
+    return {"metrics": metrics, "fastest": fastest}
 
 
 def detect_fastest_backend(
