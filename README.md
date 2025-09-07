@@ -121,6 +121,21 @@ print(cube([1, 2, 3]))
 # También disponible backend="thread" (por defecto) o backend="async"
 ```
 
+### ⏱️ Benchmark de backends con `benchmark_jam`
+
+```python
+from smooth_criminal.benchmark import benchmark_jam, detect_fastest_backend
+
+def cube(x):
+    return x ** 3
+
+data = benchmark_jam(cube, [1, 2, 3], ["thread", "process", "async"])
+print(data["fastest"])            # backend más veloz
+
+best = detect_fastest_backend(cube, [1, 2, 3], ["thread", "process", "async"])
+print(best)
+```
+
 ## 🚧 Modo bad_and_dangerous
 
 ````python
