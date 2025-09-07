@@ -1,24 +1,4 @@
-import statistics
-
-def calcular_score(durations: list, decorators: set) -> int:
-    """
-    Calcula una puntuación de optimización basada en duración y decoradores.
-    """
-    if not durations:
-        return 0
-
-    avg = statistics.mean(durations)
-    stddev = statistics.stdev(durations) if len(durations) > 1 else 0.0
-
-    score = 100
-    if "@smooth" not in decorators and "@jam" not in decorators:
-        score -= 20
-    if avg > 0.01:
-        score -= min((avg * 1000), 20)
-    if stddev > 0.005:
-        score -= 10
-
-    return max(0, round(score))
+from smooth_criminal.memory import calcular_score
 
 def formatear_tiempo(segundos: float) -> str:
     """

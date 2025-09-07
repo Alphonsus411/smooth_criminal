@@ -1,5 +1,5 @@
-from smooth_criminal.memory import get_execution_history, build_summary
-from smooth_criminal.flet_app.utils import calcular_score, formatear_tiempo
+from smooth_criminal.memory import get_execution_history, build_summary, calcular_score
+from smooth_criminal.flet_app.utils import formatear_tiempo
 
 def test_refresh_logic(monkeypatch):
     # Simular historial con monkeypatch
