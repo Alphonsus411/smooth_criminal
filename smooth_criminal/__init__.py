@@ -9,5 +9,6 @@ from .core import (
     beat_it,
     bad,
     dangerous,
+    bad_and_dangerous,
     profile_it,
 )

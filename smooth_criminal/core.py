@@ -418,6 +418,40 @@ def dangerous(
 
     return func
 
+
+def bad_and_dangerous(
+    fallback: Optional[Callable[P, T]] = None, *, parallel: bool = True
+) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    """Combina :func:`bad`, :func:`thriller` y :func:`profile_it` con *fallback*.
+
+    Aplica optimización agresiva, cronometra la ejecución, perfila la función y
+    registra las estadísticas de ejecución. Si ocurre un error, se usa el
+    ``fallback`` proporcionado.
+    """
+
+    def decorator(func: Callable[P, T]) -> Callable[P, T]:
+        optimized = bad(parallel=parallel)(func)
+        timed = thriller(optimized)
+
+        @wraps(func)
+        def inner(*args: P.args, **kwargs: P.kwargs) -> T:
+            logger.info("🚨 bad_and_dangerous: inicio")
+            result = timed(*args, **kwargs)
+            stats = profile_it(optimized, args=args, kwargs=kwargs, parallel=parallel)
+            input_type = type(args[0]) if args else None
+            log_execution_stats(
+                func_name=func.__name__,
+                input_type=input_type,
+                decorator_used="@bad_and_dangerous",
+                duration=round(stats["mean"], 6),
+            )
+            logger.info("✅ bad_and_dangerous: fin")
+            return result
+
+        return beat_it(fallback)(inner)
+
+    return decorator
+
 def _run_once(
     args: Tuple[Callable[..., Any], Tuple[Any, ...], Dict[str, Any]]
 ) -> float:

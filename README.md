@@ -32,6 +32,7 @@
 | `@bad`                  | Modo de optimización agresiva (`fastmath`)            |
 | `@beat_it`              | Fallback automático si algo falla                     |
 | `dangerous(func)`       | Mezcla poderosa de decoradores (`@bad + @thriller`)   |
+| `@bad_and_dangerous`    | Optimiza, perfila y maneja errores automáticamente    |
 | `profile_it(func)`      | Estadísticas detalladas de rendimiento                |
 | `analyze_ast(func)`     | Análisis estático para detectar código optimizable    |
 
@@ -93,6 +94,24 @@ def square(n):
     return [i * i for i in range(n)]
 
 print(square(10))
+````
+
+## 🚧 Modo bad_and_dangerous
+
+````python
+from smooth_criminal import bad_and_dangerous
+
+def fallback(_):
+    return -1
+
+@bad_and_dangerous(fallback=fallback)
+def risky(n):
+    total = 0
+    for i in range(n):
+        total += i
+    return total
+
+print(risky(5))
 ````
 
 ## 🧮 Vectorización segura
