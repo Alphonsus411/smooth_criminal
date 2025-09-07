@@ -1,7 +1,11 @@
 import flet as ft
-from smooth_criminal.memory import get_execution_history
+from smooth_criminal.memory import (
+    get_execution_history,
+    clear_execution_history,
+    export_execution_history,
+)
 from smooth_criminal.flet_app.components import info_panel, function_table, action_buttons
-from smooth_criminal.flet_app.utils import calcular_score, formatear_tiempo
+from smooth_criminal.flet_app.utils import calcular_score, formatear_tiempo, export_filename
 
 def main_view(page: ft.Page):
     table = function_table()
@@ -30,7 +34,23 @@ def main_view(page: ft.Page):
             ]))
         page.update()
 
-    btns = action_buttons(refresh, lambda e: None, lambda e: None, lambda e: None)
+    def clear(_):
+        if clear_execution_history():
+            msg.value = "Historial borrado."
+            table.rows.clear()
+        else:
+            msg.value = "No hay historial para borrar."
+        page.update()
+
+    def export(fmt: str):
+        filepath = export_filename(ext=fmt)
+        if export_execution_history(filepath, format=fmt):
+            msg.value = f"Historial exportado a {filepath}"
+        else:
+            msg.value = "No hay historial para exportar."
+        page.update()
+
+    btns = action_buttons(refresh, clear, export, lambda e: None)
 
     page.add(
         ft.Text("🎩 Smooth Criminal Dashboard", size=28, weight="bold", color="purple"),

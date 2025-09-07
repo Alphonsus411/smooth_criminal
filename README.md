@@ -53,7 +53,7 @@ python scripts/example_flet_dashboard.py
 
 - Tabla con tiempos, decoradores y puntuaciones
 
-- Botones para exportar CSV, limpiar historial o ver gráfico
+- Botones para exportar CSV/JSON/XLSX/MD, limpiar historial o ver gráfico
 
 - Interfaz elegante con Flet (modo oscuro)
 
@@ -143,6 +143,14 @@ smooth-criminal analyze my_script.py
 ````
 
 Esto analizará tu código buscando funciones lentas, bucles, range(), etc.
+
+Para exportar el historial en distintos formatos:
+
+````bash
+smooth-criminal export history.xlsx --format xlsx
+smooth-criminal export history.md --format md
+smooth-criminal export history.json --format json
+````
 
 ## 📚 Documentación
 

@@ -47,9 +47,16 @@ def main():
     subparsers.add_parser("clean", help="Elimina el historial de ejecuciones registrado.")
 
     # Comando 'export'
-    export_parser = subparsers.add_parser("export", help="Exporta el historial como archivo CSV o JSON.")
+    export_parser = subparsers.add_parser(
+        "export", help="Exporta el historial como archivo CSV, JSON, XLSX o Markdown."
+    )
     export_parser.add_argument("filepath", help="Ruta del archivo de salida")
-    export_parser.add_argument("--format", choices=["csv", "json"], default="csv", help="Formato de exportación")
+    export_parser.add_argument(
+        "--format",
+        choices=["csv", "json", "xlsx", "md"],
+        default="csv",
+        help="Formato de exportación",
+    )
 
     # Comando 'score'
     score_parser = subparsers.add_parser("score", help="Muestra una puntuación de optimización para una función.")
@@ -77,7 +84,7 @@ def main():
             "Use '[green]smooth-criminal analyze <file.py>[/green]', "
             "'[green]smooth-criminal suggest <func>[/green]', "
             "'[green]smooth-criminal dashboard[/green]' or "
-            "'[green]smooth-criminal export <file> --format csv/json[/green]'."
+            "'[green]smooth-criminal export <file> --format csv/json/xlsx/md[/green]'."
         )
 
 def show_intro():
