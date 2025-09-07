@@ -192,6 +192,18 @@ smooth-criminal export history.md --format md
 smooth-criminal export history.json --format json
 ````
 
+También puedes comparar rápidamente los backends de `jam` desde la línea de comandos:
+
+````bash
+smooth-criminal jam-test paquete.modulo:funcion --workers 4 --reps 3
+````
+
+Esto mostrará una tabla comparativa de tiempos y, al finalizar sin errores, el mensaje especial:
+
+```
+🎶 Just jammin' through those CPU cores! 🧠🕺
+```
+
 ## 💾 Backends de almacenamiento
 
 El historial de ejecuciones se guarda usando un backend configurable.
