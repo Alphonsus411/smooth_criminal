@@ -20,7 +20,26 @@ import statistics
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Set
+
+
+def calcular_score(durations: List[float], decorators: Set[str]) -> int:
+    """Calcula una puntuación de optimización basada en duración y decoradores."""
+    if not durations:
+        return 0
+
+    avg = statistics.mean(durations)
+    stddev = statistics.stdev(durations) if len(durations) > 1 else 0.0
+
+    score = 100
+    if "@smooth" not in decorators and "@jam" not in decorators:
+        score -= 20
+    if avg > 0.01:
+        score -= min((avg * 1000), 20)
+    if stddev > 0.005:
+        score -= 10
+
+    return max(0, round(score))
 
 
 class StorageBackend(ABC):
@@ -107,15 +126,7 @@ class StorageBackend(ABC):
         avg = statistics.mean(times)
         stddev = statistics.stdev(times) if count > 1 else 0.0
 
-        score = 100
-        if "@smooth" not in decorators and "@jam" not in decorators:
-            score -= 20
-        if avg > 0.01:
-            score -= min((avg * 1000), 20)
-        if stddev > 0.005:
-            score -= 10
-
-        score = max(0, round(score))
+        score = calcular_score(times, decorators)
 
         summary = (
             f"🧠 Function: {func_name}\n"

@@ -1,5 +1,5 @@
+from smooth_criminal.memory import calcular_score
 from smooth_criminal.flet_app.utils import (
-    calcular_score,
     formatear_tiempo,
     export_filename
 )

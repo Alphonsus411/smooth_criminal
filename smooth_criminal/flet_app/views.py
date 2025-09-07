@@ -4,9 +4,10 @@ from smooth_criminal.memory import (
     clear_execution_history,
     export_execution_history,
     build_summary,
+    calcular_score,
 )
 from smooth_criminal.flet_app.components import info_panel, function_table, action_buttons
-from smooth_criminal.flet_app.utils import calcular_score, formatear_tiempo, export_filename
+from smooth_criminal.flet_app.utils import formatear_tiempo, export_filename
 
 def main_view(page: ft.Page):
     table = function_table()
