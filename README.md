@@ -69,6 +69,17 @@ pip install -e .
 ````
 
 
+## 🛠️ Configuración de entorno
+
+Antes de ejecutar la librería copia el archivo de ejemplo y ajusta las variables:
+
+````bash
+cp .env.example .env
+````
+
+Luego edita `.env` para personalizar valores como `LOG_PATH`.
+
+
 ## 💃 Ejemplo rápido
 
 ````python
