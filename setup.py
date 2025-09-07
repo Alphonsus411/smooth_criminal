@@ -17,6 +17,10 @@ setup(
         "tabulate",
         "matplotlib"
     ],
+    extras_require={
+        "tinydb": ["tinydb"],
+        "sqlite": [],
+    },
     entry_points={
         "console_scripts": [
             "smooth-criminal=smooth_criminal.cli:main",

@@ -1,161 +1,363 @@
+"""Módulo de persistencia configurable para Smooth Criminal.
+
+Este archivo define una interfaz ``StorageBackend`` con tres
+implementaciones disponibles: ``JsonBackend``, ``SQLiteBackend`` y
+``TinyDBBackend``.  El backend se selecciona mediante la variable de
+entorno ``SMOOTH_CRIMINAL_STORAGE`` que puede tomar los valores
+``json`` (por defecto), ``sqlite`` o ``tinydb``.
+
+Las funciones públicas del módulo delegan su comportamiento en el
+backend elegido manteniendo la API original para el resto del
+proyecto.
+"""
+
+from __future__ import annotations
+
+import csv
 import json
 import os
+import statistics
+from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from collections import defaultdict
-import csv
-import statistics
-
-# Ruta del archivo de log
-LOG_PATH = Path.home() / ".smooth_criminal_log.json"
+from typing import Dict, List, Optional, Tuple
 
 
-def log_execution_stats(func_name, input_type, decorator_used, duration):
-    """
-    Registra estadísticas de ejecución para aprendizaje futuro.
-    """
-    log_entry = {
-        "function": func_name,
-        "input_type": str(input_type),
-        "decorator": decorator_used,
-        "duration": duration,
-        "timestamp": datetime.utcnow().isoformat()
-    }
+class StorageBackend(ABC):
+    """Interfaz base para los distintos métodos de almacenamiento."""
 
-    logs = []
-    if LOG_PATH.exists():
-        with open(LOG_PATH, "r", encoding="utf-8") as f:
+    #: ruta por defecto utilizada por el backend
+    path: Path
+
+    @abstractmethod
+    def log_execution_stats(
+        self, func_name: str, input_type, decorator_used: str, duration: float
+    ) -> None:
+        """Guarda un registro de ejecución."""
+
+    @abstractmethod
+    def get_execution_history(self, func_name: Optional[str] = None) -> List[Dict]:
+        """Obtiene el historial de ejecuciones."""
+
+    @abstractmethod
+    def clear_execution_history(self) -> bool:
+        """Limpia por completo el historial."""
+
+    def export_execution_history(self, filepath, format: str = "csv") -> bool:
+        """Exporta el historial a CSV o JSON."""
+        data = self.get_execution_history()
+        if not data:
+            return False
+
+        try:
+            data.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+        except Exception:
+            pass
+
+        format = format.lower()
+        if format == "json":
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+        elif format == "csv":
+            keys = ["function", "input_type", "decorator", "duration", "timestamp"]
+            with open(filepath, "w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=keys)
+                writer.writeheader()
+                writer.writerows(data)
+        else:
+            raise ValueError("Formato no soportado: usa 'csv' o 'json'.")
+
+        return True
+
+    def score_function(self, func_name: str) -> Tuple[Optional[int], str]:
+        """Calcula la puntuación de optimización para una función."""
+        logs = self.get_execution_history(func_name)
+        if not logs:
+            return None, "No hay registros para esta función."
+
+        times = [entry["duration"] for entry in logs]
+        decorators = {entry["decorator"] for entry in logs}
+        count = len(times)
+        avg = statistics.mean(times)
+        stddev = statistics.stdev(times) if count > 1 else 0.0
+
+        score = 100
+        if "@smooth" not in decorators and "@jam" not in decorators:
+            score -= 20
+        if avg > 0.01:
+            score -= min((avg * 1000), 20)
+        if stddev > 0.005:
+            score -= 10
+
+        score = max(0, round(score))
+
+        summary = (
+            f"🧠 Function: {func_name}\n"
+            f"- Executions: {count}\n"
+            f"- Avg time: {avg:.6f}s\n"
+            f"- Std dev: {stddev:.6f}s\n"
+            f"- Decorators: {', '.join(sorted(decorators))}\n"
+        )
+
+        return score, summary
+
+
+# ---------------------------------------------------------------------------
+# Implementaciones concretas
+
+
+class JsonBackend(StorageBackend):
+    """Persistencia basada en un archivo JSON."""
+
+    path = Path.home() / ".smooth_criminal_log.json"
+
+    def log_execution_stats(self, func_name, input_type, decorator_used, duration):
+        log_entry = {
+            "function": func_name,
+            "input_type": str(input_type),
+            "decorator": decorator_used,
+            "duration": duration,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+        logs: List[Dict] = []
+        if self.path.exists():
+            with open(self.path, "r", encoding="utf-8") as f:
+                try:
+                    logs = json.load(f)
+                except json.JSONDecodeError:
+                    logs = []
+
+        logs.append(log_entry)
+        with open(self.path, "w", encoding="utf-8") as f:
+            json.dump(logs, f, indent=2)
+
+    def get_execution_history(self, func_name: Optional[str] = None) -> List[Dict]:
+        if not self.path.exists():
+            return []
+
+        with open(self.path, "r", encoding="utf-8") as f:
             try:
                 logs = json.load(f)
             except json.JSONDecodeError:
-                logs = []
+                return []
 
-    logs.append(log_entry)
+        if func_name:
+            logs = [entry for entry in logs if entry["function"] == func_name]
+        return logs
 
-    with open(LOG_PATH, "w", encoding="utf-8") as f:
-        json.dump(logs, f, indent=2)
+    def clear_execution_history(self) -> bool:
+        if self.path.exists():
+            self.path.unlink()
+            return True
+        return False
+
+
+class SQLiteBackend(StorageBackend):
+    """Persistencia utilizando una base de datos SQLite."""
+
+    path = Path.home() / ".smooth_criminal_log.sqlite"
+
+    def _ensure_table(self, conn) -> None:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS logs (
+                function TEXT,
+                input_type TEXT,
+                decorator TEXT,
+                duration REAL,
+                timestamp TEXT
+            )
+            """
+        )
+        conn.commit()
+
+    def log_execution_stats(self, func_name, input_type, decorator_used, duration):
+        import sqlite3
+
+        with sqlite3.connect(self.path) as conn:
+            self._ensure_table(conn)
+            conn.execute(
+                "INSERT INTO logs VALUES (?, ?, ?, ?, ?)",
+                (
+                    func_name,
+                    str(input_type),
+                    decorator_used,
+                    float(duration),
+                    datetime.utcnow().isoformat(),
+                ),
+            )
+            conn.commit()
+
+    def get_execution_history(self, func_name: Optional[str] = None) -> List[Dict]:
+        import sqlite3
+
+        if not self.path.exists():
+            return []
+
+        with sqlite3.connect(self.path) as conn:
+            self._ensure_table(conn)
+            cursor = conn.cursor()
+            if func_name:
+                cursor.execute(
+                    "SELECT function,input_type,decorator,duration,timestamp FROM logs WHERE function=?",
+                    (func_name,),
+                )
+            else:
+                cursor.execute(
+                    "SELECT function,input_type,decorator,duration,timestamp FROM logs"
+                )
+            rows = cursor.fetchall()
+
+        return [
+            {
+                "function": r[0],
+                "input_type": r[1],
+                "decorator": r[2],
+                "duration": r[3],
+                "timestamp": r[4],
+            }
+            for r in rows
+        ]
+
+    def clear_execution_history(self) -> bool:
+        if self.path.exists():
+            self.path.unlink()
+            return True
+        return False
+
+
+class TinyDBBackend(StorageBackend):
+    """Persistencia mediante TinyDB."""
+
+    path = Path.home() / ".smooth_criminal_log.tinydb"
+
+    def __init__(self) -> None:
+        try:
+            from tinydb import Query, TinyDB
+        except Exception as exc:  # pragma: no cover - la importación es dinámica
+            raise RuntimeError(
+                "TinyDB no está instalado. Instálalo con el extra 'tinydb'."
+            ) from exc
+
+        self.TinyDB = TinyDB
+        self.Query = Query
+
+    def _open(self):
+        return self.TinyDB(self.path)
+
+    def log_execution_stats(self, func_name, input_type, decorator_used, duration):
+        with self._open() as db:
+            db.insert(
+                {
+                    "function": func_name,
+                    "input_type": str(input_type),
+                    "decorator": decorator_used,
+                    "duration": duration,
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+
+    def get_execution_history(self, func_name: Optional[str] = None) -> List[Dict]:
+        if not self.path.exists():
+            return []
+
+        with self._open() as db:
+            if func_name:
+                results = db.search(self.Query().function == func_name)
+            else:
+                results = db.all()
+        return list(results)
+
+    def clear_execution_history(self) -> bool:
+        if self.path.exists():
+            self.path.unlink()
+            return True
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Selección dinámica del backend
+
+
+def _select_backend() -> StorageBackend:
+    name = os.getenv("SMOOTH_CRIMINAL_STORAGE", "json").lower()
+    if name == "sqlite":
+        return SQLiteBackend()
+    if name == "tinydb":
+        return TinyDBBackend()
+    return JsonBackend()
+
+
+_BACKEND: StorageBackend = _select_backend()
+
+# Exponer la ruta del backend seleccionado para mantener compatibilidad con
+# el código existente y las pruebas.
+LOG_PATH = _BACKEND.path
+
+
+def log_execution_stats(func_name, input_type, decorator_used, duration):
+    """Delegación pública al backend activo."""
+    _BACKEND.log_execution_stats(func_name, input_type, decorator_used, duration)
 
 
 _ORIGINAL_GET_HISTORY = None
 
+
 def get_execution_history(func_name=None):
+    """Obtiene el historial usando el backend activo.
+
+    Mantiene compatibilidad con monkeypatch en tests que importaron una
+    referencia previa de la función.
     """
-    Devuelve el historial de ejecuciones guardadas.
-    Si se pasa un nombre de función, filtra por ella.
-    Permite ser parcheada sin afectar a importaciones previas.
-    """
+
     current = globals().get("get_execution_history", _ORIGINAL_GET_HISTORY)
     if _ORIGINAL_GET_HISTORY is not None and current is not _ORIGINAL_GET_HISTORY:
         try:
             return current(func_name)
-        except TypeError:
+        except TypeError:  # pragma: no cover - compatibilidad
             return current()
 
-    if not LOG_PATH.exists():
-        return []
+    return _BACKEND.get_execution_history(func_name)
 
-    with open(LOG_PATH, "r", encoding="utf-8") as f:
-        try:
-            logs = json.load(f)
-        except json.JSONDecodeError:
-            return []
-
-    if func_name:
-        logs = [entry for entry in logs if entry["function"] == func_name]
-
-    return logs
 
 _ORIGINAL_GET_HISTORY = get_execution_history
 
 
+def clear_execution_history():
+    """Limpia el historial usando el backend activo."""
+    return _BACKEND.clear_execution_history()
+
+
+def export_execution_history(filepath, format="csv"):
+    """Exporta el historial usando el backend activo."""
+    return _BACKEND.export_execution_history(filepath, format=format)
+
+
+def score_function(func_name):
+    """Calcula la puntuación delegando en el backend activo."""
+    return _BACKEND.score_function(func_name)
+
+
 def suggest_boost(func_name):
-    """
-    Recomienda el mejor decorador según el historial registrado.
-    """
+    """Función auxiliar original; se mantiene sin cambios."""
     logs = get_execution_history(func_name)
     if not logs:
         return f"No data found for function '{func_name}'."
 
-    decor_stats = defaultdict(list)
+    decor_stats = {}
     for entry in logs:
-        decor_stats[entry["decorator"]].append(entry["duration"])
+        decor_stats.setdefault(entry["decorator"], []).append(entry["duration"])
 
-    avg_times = {
-        decor: sum(times) / len(times)
-        for decor, times in decor_stats.items()
-    }
-
+    avg_times = {decor: sum(times) / len(times) for decor, times in decor_stats.items()}
     best_decor = min(avg_times, key=avg_times.get)
-    return f"🧠 Suggestion for '{func_name}': use [bold green]{best_decor}[/bold green] (avg {avg_times[best_decor]:.6f}s)"
+    return (
+        f"🧠 Suggestion for '{func_name}': use [bold green]{best_decor}[/bold green] "
+        f"(avg {avg_times[best_decor]:.6f}s)"
+    )
 
-def clear_execution_history():
-    """
-    Elimina el archivo de log del historial de ejecuciones.
-    """
-    if LOG_PATH.exists():
-        LOG_PATH.unlink()
-        return True
-    return False
 
-def export_execution_history(filepath, format="csv"):
-    """
-    Exporta el historial de ejecuciones a CSV o JSON.
-    """
-    data = get_execution_history()
-    if not data:
-        return False
+# Mantener compatibilidad con el sistema de parcheo utilizado por algunas
+# pruebas; se almacena una referencia a la función original.
+_ORIGINAL_GET_HISTORY = get_execution_history
 
-    # Ordenar por timestamp para que los registros más recientes aparezcan primero
-    try:
-        data.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-    except Exception:
-        pass
-
-    format = format.lower()
-    if format == "json":
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
-    elif format == "csv":
-        keys = ["function", "input_type", "decorator", "duration", "timestamp"]
-        with open(filepath, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=keys)
-            writer.writeheader()
-            writer.writerows(data)
-    else:
-        raise ValueError("Formato no soportado: usa 'csv' o 'json'.")
-
-    return True
-
-def score_function(func_name):
-    """
-    Calcula una puntuación de optimización para la función dada.
-    Rango: 0 a 100
-    """
-    logs = get_execution_history(func_name)
-    if not logs:
-        return None, "No hay registros para esta función."
-
-    times = [entry["duration"] for entry in logs]
-    decorators = {entry["decorator"] for entry in logs}
-    count = len(times)
-    avg = statistics.mean(times)
-    stddev = statistics.stdev(times) if count > 1 else 0.0
-
-    # Heurística de puntuación
-    score = 100
-    if "@smooth" not in decorators and "@jam" not in decorators:
-        score -= 20
-    if avg > 0.01:
-        score -= min((avg * 1000), 20)
-    if stddev > 0.005:
-        score -= 10
-
-    score = max(0, round(score))
-
-    summary = f"🧠 Function: {func_name}\n" \
-              f"- Executions: {count}\n" \
-              f"- Avg time: {avg:.6f}s\n" \
-              f"- Std dev: {stddev:.6f}s\n" \
-              f"- Decorators: {', '.join(sorted(decorators))}\n"
-
-    return score, summary
