@@ -28,13 +28,17 @@ from typing import (
     Literal,
 )
 
-from smooth_criminal.memory import log_execution_stats, get_execution_history
+from smooth_criminal import memory
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SmoothCriminal")
 
 # Flag global para activar efectos de MJ
 MJ_MODE = False
+
+# Almacena las funciones que ya han "entusiasmado" los benchmarks para evitar
+# mensajes repetidos de mejora significativa.
+_THRILLER_ANNOUNCED: set[str] = set()
 
 
 def set_mj_mode(enabled: bool) -> None:
@@ -293,7 +297,7 @@ def thriller(func: Callable[P, T]) -> Callable[P, T]:
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         logger.info("🎬 It’s close to midnight… benchmarking begins (Thriller Mode).")
 
-        history = get_execution_history(func.__name__)
+        history = memory.get_execution_history(func.__name__)
         prev = [h["duration"] for h in history if h.get("decorator") == "@thriller"]
         prev_avg = statistics.mean(prev) if prev else None
 
@@ -305,17 +309,24 @@ def thriller(func: Callable[P, T]) -> Callable[P, T]:
             f"🧟 ‘Thriller’ just revealed a performance monster: {duration:.6f} seconds."
         )
 
-        # Registrar y analizar mejora solo en MJ_MODE
-        if MJ_MODE:
-            log_execution_stats(
-                func_name=func.__name__,
-                input_type=type(args[0]) if args else type(None),
-                decorator_used="@thriller",
-                duration=duration,
+        if prev_avg and duration > 0 and prev_avg / duration >= 5 and func.__name__ not in _THRILLER_ANNOUNCED:
+            logger.info(
+                "♂ It's close to midnight... and your code just THRILLED the benchmarks."
             )
-            if prev_avg and prev_avg > 0:
-                improvement = (prev_avg - duration) / prev_avg * 100
-                play_mj_effect(improvement)
+            _THRILLER_ANNOUNCED.add(func.__name__)
+
+        # Registrar nueva duración para futuras comparaciones
+        memory.log_execution_stats(
+            func_name=func.__name__,
+            input_type=type(args[0]) if args else type(None),
+            decorator_used="@thriller",
+            duration=duration,
+        )
+
+        # Analizar mejora y efectos MJ si está activado
+        if MJ_MODE and prev_avg and prev_avg > 0:
+            improvement = (prev_avg - duration) / prev_avg * 100
+            play_mj_effect(improvement)
 
         return result
 
