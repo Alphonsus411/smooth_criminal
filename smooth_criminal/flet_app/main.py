@@ -4,6 +4,7 @@ from smooth_criminal.memory import (
     score_function,
     clear_execution_history,
     export_execution_history,
+    build_summary,
 )
 from datetime import datetime
 
@@ -72,33 +73,22 @@ def main(page: ft.Page):
 
     def refresh_table(e=None):
         history = get_execution_history()
-        seen = {}
-        for entry in history:
-            name = entry["function"]
-            if name not in seen:
-                seen[name] = {
-                    "decorators": set(),
-                    "runs": 0,
-                    "total_time": 0.0
-                }
-            seen[name]["decorators"].add(entry["decorator"])
-            seen[name]["runs"] += 1
-            seen[name]["total_time"] += entry["duration"]
+        summary = build_summary(history)
 
         table.rows = []
-        for name, data in seen.items():
-            avg_time = data["total_time"] / data["runs"]
+        for name, data in summary.items():
+            avg_time = sum(data["durations"]) / len(data["durations"])
             score = score_function(name)[0]
             row = ft.DataRow(cells=[
                 ft.DataCell(ft.Text(name)),
                 ft.DataCell(ft.Text(", ".join(sorted(data["decorators"])))),
-                ft.DataCell(ft.Text(str(data["runs"]))),
+                ft.DataCell(ft.Text(str(len(data["durations"])))),
                 ft.DataCell(ft.Text(f"{avg_time:.6f}")),
                 ft.DataCell(ft.Text(f"{score}/100" if score is not None else "N/A")),
             ])
             table.rows.append(row)
 
-        dropdown_func.options = [ft.dropdown.Option(f) for f in seen.keys()]
+        dropdown_func.options = [ft.dropdown.Option(f) for f in summary.keys()]
         page.update()
 
     def clear_history(e):

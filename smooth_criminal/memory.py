@@ -342,6 +342,39 @@ def export_execution_history(filepath, format="csv"):
     return _BACKEND.export_execution_history(filepath, format=format)
 
 
+def build_summary(logs: List[Dict]) -> Dict[str, Dict[str, object]]:
+    """Agrupa un listado de logs por función.
+
+    Parameters
+    ----------
+    logs:
+        Secuencia de registros devueltos por :func:`get_execution_history`.
+
+    Returns
+    -------
+    dict
+        Diccionario cuyas claves son los nombres de función y los valores
+        contienen dos entradas:
+
+        ``durations``
+            Lista con las duraciones registradas.
+        ``decorators``
+            Conjunto con los decoradores utilizados.
+    """
+
+    summary: Dict[str, Dict[str, object]] = {}
+    for entry in logs:
+        fn = entry.get("function")
+        if fn is None:
+            continue
+        data = summary.setdefault(fn, {"durations": [], "decorators": set()})
+        if "duration" in entry:
+            data["durations"].append(entry["duration"])
+        if "decorator" in entry:
+            data["decorators"].add(entry["decorator"])
+    return summary
+
+
 def score_function(func_name):
     """Calcula la puntuación delegando en el backend activo."""
     return _BACKEND.score_function(func_name)
