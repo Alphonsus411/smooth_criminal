@@ -68,6 +68,15 @@ Prueba manual:
 2. Pulsa el interruptor **Moonwalk** en la fila de botones.
 3. Observa al bailarín deslizarse y liberarse automáticamente.
 
+### 🎬 Nuevas animaciones
+
+El dashboard incorpora efectos como "Spin" y "Toe Stand" para dar más ritmo a tus métricas.
+Actívalos desde la línea de comandos:
+
+```bash
+python -m smooth_criminal.dashboard --animation spin
+```
+
 ## ⚙️ Instalación
 
 ````bash
@@ -221,7 +230,7 @@ Esto mostrará una tabla comparativa de tiempos y, al finalizar sin errores, el 
 🎶 Just jammin' through those CPU cores! 🧠🕺
 ```
 
-### 🕺 Modo MJ
+### 🕺 Flag --mj-mode
 
 Activa efectos especiales al detectar mejoras de rendimiento:
 
@@ -233,6 +242,33 @@ Cuando el modo está activo y el rendimiento mejora al menos un 10 %, se
 reproducirá un pequeño efecto de Michael Jackson.  Si la dependencia
 `playsound` no está disponible, se mostrará un mensaje o GIF/ASCII mediante
 `rich`.  En ausencia de estas dependencias, solo se emitirá una advertencia.
+
+## 🌐 API
+
+Lanza una API HTTP para consultar las estadísticas desde otras aplicaciones:
+
+```bash
+smooth-criminal api --host 127.0.0.1 --port 8000
+```
+
+Después puedes obtener los datos con:
+
+```bash
+curl http://127.0.0.1:8000/history
+```
+
+## 🔌 Plugin
+
+El directorio `vscode-extension` contiene un plugin para VS Code que integra los comandos de Smooth Criminal.
+Instálalo con:
+
+```bash
+cd vscode-extension
+npm install
+npm run build
+```
+
+En VS Code, carga la extensión desde esta carpeta y podrás ejecutar análisis desde el editor.
 
 ## 💾 Backends de almacenamiento
 
