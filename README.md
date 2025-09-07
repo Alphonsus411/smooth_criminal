@@ -33,6 +33,7 @@
 | `@black_or_white(mode)` | Optimiza tipos numéricos (`float32` vs `float64`)     |
 | `@bad`                  | Modo de optimización agresiva (`fastmath`)            |
 | `@beat_it`              | Fallback automático si algo falla                     |
+| `@mj_mode`              | Aplica un decorador aleatorio con mensaje de MJ       |
 | `dangerous(func)`       | Mezcla poderosa de decoradores (`@bad + @thriller`)   |
 | `@bad_and_dangerous`    | Optimiza, perfila y maneja errores automáticamente    |
 | `profile_it(func)`      | Estadísticas detalladas de rendimiento                |
@@ -157,6 +158,29 @@ print(data["fastest"])            # backend más veloz
 best = detect_fastest_backend(cube, [1, 2, 3], ["thread", "process", "async"])
 print(best)
 ```
+
+### 🎲 Decorador aleatorio `mj_mode`
+
+```python
+import random
+from smooth_criminal import mj_mode
+
+random.seed(0)
+
+@mj_mode
+def identidad(x):
+    return x
+
+print(identidad([1, 2, 3]))
+# Posible salida: "🥁 Jam session with 4 workers!"
+```
+
+Mensajes posibles:
+
+- 🕺 Hee-Hee! You're now smooth.
+- 😎 Who's bad? You're bad!
+- 🎬 It's Thriller time!
+- 🥁 Jam session with 4 workers!
 
 ## 🚧 Modo bad_and_dangerous
 
