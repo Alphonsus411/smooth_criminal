@@ -1,4 +1,4 @@
-from smooth_criminal.memory import get_execution_history
+from smooth_criminal.memory import get_execution_history, build_summary
 from smooth_criminal.flet_app.utils import calcular_score, formatear_tiempo
 
 def test_refresh_logic(monkeypatch):
@@ -12,13 +12,7 @@ def test_refresh_logic(monkeypatch):
     monkeypatch.setattr("smooth_criminal.memory.get_execution_history", lambda: fake_history)
 
     # Procesar resumen
-    resumen = {}
-    for entry in get_execution_history():
-        name = entry["function"]
-        if name not in resumen:
-            resumen[name] = {"durations": [], "decorators": set()}
-        resumen[name]["durations"].append(entry["duration"])
-        resumen[name]["decorators"].add(entry["decorator"])
+    resumen = build_summary(get_execution_history())
 
     # Verificaciones
     assert "foo" in resumen

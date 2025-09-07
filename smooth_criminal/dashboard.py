@@ -1,7 +1,6 @@
-from collections import defaultdict
 from rich.table import Table
 from rich.console import Console
-from smooth_criminal.memory import get_execution_history
+from smooth_criminal.memory import get_execution_history, build_summary
 
 console = Console()
 
@@ -15,13 +14,7 @@ def render_dashboard():
         console.print("[yellow]No hay historial de ejecuciones todavía.[/yellow]")
         return
 
-    stats = defaultdict(lambda: {"count": 0, "total_time": 0.0, "decorators": set()})
-
-    for entry in all_logs:
-        name = entry["function"]
-        stats[name]["count"] += 1
-        stats[name]["total_time"] += entry["duration"]
-        stats[name]["decorators"].add(entry["decorator"])
+    stats = build_summary(all_logs)
 
     table = Table(title="🧠 Smooth Criminal — Function Dashboard", header_style="bold magenta")
     table.add_column("Function", style="cyan", no_wrap=True)
@@ -30,11 +23,12 @@ def render_dashboard():
     table.add_column("Avg Time (s)", justify="right")
 
     for name, info in stats.items():
-        avg_time = info["total_time"] / info["count"]
+        count = len(info["durations"])
+        avg_time = sum(info["durations"]) / count
         table.add_row(
             name,
             ", ".join(sorted(info["decorators"])),
-            str(info["count"]),
+            str(count),
             f"{avg_time:.6f}"
         )
 

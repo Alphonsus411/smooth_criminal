@@ -3,6 +3,7 @@ from smooth_criminal.memory import (
     get_execution_history,
     clear_execution_history,
     export_execution_history,
+    build_summary,
 )
 from smooth_criminal.flet_app.components import info_panel, function_table, action_buttons
 from smooth_criminal.flet_app.utils import calcular_score, formatear_tiempo, export_filename
@@ -13,13 +14,7 @@ def main_view(page: ft.Page):
 
     def refresh(_=None):
         history = get_execution_history()
-        summary = {}
-        for entry in history:
-            fn = entry["function"]
-            if fn not in summary:
-                summary[fn] = {"durations": [], "decorators": set()}
-            summary[fn]["durations"].append(entry["duration"])
-            summary[fn]["decorators"].add(entry["decorator"])
+        summary = build_summary(history)
 
         table.rows.clear()
         for fn, data in summary.items():
