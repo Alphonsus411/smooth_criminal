@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_compl
 import inspect
 import ast
 import sys
+import os
 
 from numba import jit, vectorize as nb_vectorize, guvectorize as nb_guvectorize
 import numpy as np
@@ -27,10 +28,68 @@ from typing import (
     Literal,
 )
 
-from smooth_criminal.memory import log_execution_stats
+from smooth_criminal.memory import log_execution_stats, get_execution_history
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SmoothCriminal")
+
+# Flag global para activar efectos de MJ
+MJ_MODE = False
+
+
+def set_mj_mode(enabled: bool) -> None:
+    """Activa o desactiva el modo MJ.
+
+    Parameters
+    ----------
+    enabled:
+        Si ``True`` se habilitan los efectos especiales al detectar mejoras de
+        rendimiento.
+    """
+
+    global MJ_MODE
+    MJ_MODE = enabled
+
+
+def play_mj_effect(improvement: float, mj_mode: bool | None = None, *, threshold: float = 10.0) -> None:
+    """Reproduce un efecto especial al mejorar el rendimiento.
+
+    Intenta reproducir un sonido usando :mod:`playsound`.  Si no está
+    disponible o falla, muestra un mensaje/ASCII mediante ``rich``.
+
+    Parameters
+    ----------
+    improvement:
+        Porcentaje de mejora obtenida.
+    mj_mode:
+        Permite forzar el modo MJ de forma explícita.  Si es ``None`` se usa el
+        valor global establecido por :func:`set_mj_mode`.
+    threshold:
+        Porcentaje mínimo de mejora para activar el efecto.
+    """
+
+    active = MJ_MODE if mj_mode is None else mj_mode
+    if not active or improvement < threshold:
+        return
+
+    try:
+        from playsound import playsound  # type: ignore
+
+        audio_path = os.path.join(os.path.dirname(__file__), "mj.mp3")
+        playsound(audio_path)
+        return
+    except Exception as exc:  # pragma: no cover - dependencias opcionales
+        logger.warning("No se pudo reproducir audio MJ: %s", exc)
+
+    try:
+        from rich.console import Console
+
+        console = Console()
+        console.print(
+            f"[bold magenta]Hee-hee! Mejora de {improvement:.1f}%[/bold magenta]"
+        )
+    except Exception as exc:  # pragma: no cover - dependencias opcionales
+        logger.warning("No se pudo mostrar efecto MJ: %s", exc)
 
 T = TypeVar("T")
 A = TypeVar("A")
@@ -233,12 +292,31 @@ def thriller(func: Callable[P, T]) -> Callable[P, T]:
     @wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         logger.info("🎬 It’s close to midnight… benchmarking begins (Thriller Mode).")
+
+        history = get_execution_history(func.__name__)
+        prev = [h["duration"] for h in history if h.get("decorator") == "@thriller"]
+        prev_avg = statistics.mean(prev) if prev else None
+
         start = time.perf_counter()
         result = func(*args, **kwargs)
         end = time.perf_counter()
+        duration = end - start
         logger.info(
-            f"🧟 ‘Thriller’ just revealed a performance monster: {end - start:.6f} seconds."
+            f"🧟 ‘Thriller’ just revealed a performance monster: {duration:.6f} seconds."
         )
+
+        # Registrar y analizar mejora solo en MJ_MODE
+        if MJ_MODE:
+            log_execution_stats(
+                func_name=func.__name__,
+                input_type=type(args[0]) if args else type(None),
+                decorator_used="@thriller",
+                duration=duration,
+            )
+            if prev_avg and prev_avg > 0:
+                improvement = (prev_avg - duration) / prev_avg * 100
+                play_mj_effect(improvement)
+
         return result
 
     return wrapper
