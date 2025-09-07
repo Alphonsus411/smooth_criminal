@@ -1,4 +1,22 @@
+import logging
+import os
+
+from rich.logging import RichHandler
+
 from smooth_criminal.core import auto_boost
+
+
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+numeric_level = getattr(logging, log_level, logging.INFO)
+
+logging.basicConfig(
+    level=numeric_level,
+    format="%(message)s",
+    handlers=[RichHandler(rich_tracebacks=True, markup=True)],
+    force=True,
+)
+
+logger = logging.getLogger("SmoothCriminal")
 
 @auto_boost()
 def to_analyze():
@@ -8,6 +26,6 @@ def to_analyze():
     return total
 
 if __name__ == "__main__":
-    print("Running to_analyze() to register execution...")
+    logger.info("Running to_analyze() to register execution...")
     result = to_analyze()
-    print("Result:", result)
+    logger.info(f"Result: {result}")
