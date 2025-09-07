@@ -2,6 +2,15 @@
 requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "smooth-criminal"
+version = "0.5.0"
+description = "Dashboard de análisis de rendimiento con decoradores inteligentes"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE.txt"}
+authors = [{name = "Adolfo González", email = "tucorreo@example.com"}]
+
 [project.optional-dependencies]
 tinydb = ["tinydb"]
 sqlite = []
