@@ -1,5 +1,7 @@
 from .core import (
     smooth,
+    vectorized,
+    guvectorized,
     moonwalk,
     thriller,
     jam,

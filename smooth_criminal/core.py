@@ -5,7 +5,7 @@ from multiprocessing import Pool, cpu_count
 import inspect
 import ast
 
-from numba import jit
+from numba import jit, vectorize as nb_vectorize, guvectorize as nb_guvectorize
 import numpy as np
 import asyncio
 import logging
@@ -68,6 +68,92 @@ def smooth(func: Callable[P, T]) -> Callable[P, T]:
             return func(*args, **kwargs)
 
         return fallback
+
+
+def vectorized(ftylist_or_function=(), **kws):
+    """Envuelve ``numba.vectorize`` añadiendo registro y *fallback*.
+
+    Parametros
+    ----------
+    ftylist_or_function : sequence or function, optional
+        Igual que en :func:`numba.vectorize`.
+    **kws : Any
+        Argumentos adicionales para ``numba.vectorize``.
+    """
+
+    if callable(ftylist_or_function):
+        func = ftylist_or_function
+        signatures = ()
+    else:
+        func = None
+        signatures = ftylist_or_function
+
+    def _compile(f: Callable):
+        try:
+            jit_func = nb_vectorize(signatures, **kws)(f)
+
+            @wraps(f)
+            def wrapper(*args, **kwargs):
+                logger.info("Vectorization... that's smooth!")
+                try:
+                    return jit_func(*args, **kwargs)
+                except Exception:
+                    logger.warning(
+                        "Beat it! Numba vectorize failed at runtime. Falling back."
+                    )
+                    return f(*args, **kwargs)
+
+            return wrapper
+        except Exception:
+            logger.warning("Beat it! Numba vectorize failed. Falling back.")
+            return f
+
+    if func is not None:
+        return _compile(func)
+
+    def decorator(f: Callable):
+        return _compile(f)
+
+    return decorator
+
+
+def guvectorized(*args, **kws):
+    """Envuelve ``numba.guvectorize`` añadiendo registro y *fallback*."""
+
+    if args and callable(args[0]):
+        func = args[0]
+        sig_args = ()
+    else:
+        func = None
+        sig_args = args
+
+    def _compile(f: Callable):
+        try:
+            jit_func = nb_guvectorize(*sig_args, **kws)(f)
+
+            @wraps(f)
+            def wrapper(*w_args, **w_kwargs):
+                logger.info("GUVectorization in the groove!")
+                try:
+                    return jit_func(*w_args, **w_kwargs)
+                except Exception:
+                    logger.warning(
+                        "Beat it! Numba guvectorize failed at runtime. Falling back."
+                    )
+                    return f(*w_args, **w_kwargs)
+
+            return wrapper
+        except Exception:
+            logger.warning("Beat it! Numba guvectorize failed. Falling back.")
+            return f
+
+    if func is not None:
+        return _compile(func)
+
+    def decorator(f: Callable):
+        return _compile(f)
+
+    return decorator
 
 @overload
 def moonwalk(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]: ...
