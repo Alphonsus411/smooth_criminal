@@ -221,6 +221,19 @@ Esto mostrará una tabla comparativa de tiempos y, al finalizar sin errores, el 
 🎶 Just jammin' through those CPU cores! 🧠🕺
 ```
 
+### 🕺 Modo MJ
+
+Activa efectos especiales al detectar mejoras de rendimiento:
+
+```bash
+smooth-criminal jam-test paquete.modulo:funcion --workers 4 --mj-mode
+```
+
+Cuando el modo está activo y el rendimiento mejora al menos un 10 %, se
+reproducirá un pequeño efecto de Michael Jackson.  Si la dependencia
+`playsound` no está disponible, se mostrará un mensaje o GIF/ASCII mediante
+`rich`.  En ausencia de estas dependencias, solo se emitirá una advertencia.
+
 ## 💾 Backends de almacenamiento
 
 El historial de ejecuciones se guarda usando un backend configurable.

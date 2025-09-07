@@ -19,6 +19,7 @@ from smooth_criminal.memory import (
     export_execution_history,
     score_function,
 )
+from smooth_criminal.core import play_mj_effect, set_mj_mode
 
 
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -35,6 +36,11 @@ logger = logging.getLogger("SmoothCriminal")
 
 def main():
     parser = argparse.ArgumentParser(description="Smooth Criminal CLI")
+    parser.add_argument(
+        "--mj-mode",
+        action="store_true",
+        help="Activa efectos MJ cuando hay mejoras de rendimiento",
+    )
     subparsers = parser.add_subparsers(dest="command")
 
     # Comando 'analyze'
@@ -87,6 +93,7 @@ def main():
     )
 
     args = parser.parse_args()
+    set_mj_mode(args.mj_mode)
     if not getattr(args, "silent", False):
         show_intro()
 
@@ -103,7 +110,9 @@ def main():
     elif args.command == "score":
         handle_score(args.func_name)
     elif args.command == "jam-test":
-        handle_jam_test(args.func_path, args.workers, args.reps, args.silent)
+        handle_jam_test(
+            args.func_path, args.workers, args.reps, args.silent, args.mj_mode
+        )
 
     else:
         logger.warning(
@@ -174,7 +183,9 @@ def handle_score(func_name):
         logger.info(f"[bold {color}]Optimization Score: {score}/100[/bold {color}]")
 
 
-def handle_jam_test(func_path: str, workers: int, reps: int, silent: bool) -> None:
+def handle_jam_test(
+    func_path: str, workers: int, reps: int, silent: bool, mj_mode: bool
+) -> None:
     module_name, func_name = func_path.split(":", 1)
     module = importlib.import_module(module_name)
     func = getattr(module, func_name)
@@ -201,7 +212,11 @@ def handle_jam_test(func_path: str, workers: int, reps: int, silent: bool) -> No
         print(json.dumps({"averages": averages, "fastest": fastest}))
         logging.disable(logging.NOTSET)
         return
+
     max_duration = max(averages.values()) or 1.0
+    min_duration = min(averages.values()) or 0.0
+    improvement = ((max_duration - min_duration) / max_duration) * 100
+    play_mj_effect(improvement, mj_mode)
 
     console = Console()
     table = Table(title="Resultados jam-test")
