@@ -27,13 +27,16 @@ def test_thriller_improvement_message(monkeypatch, caplog):
 
     from smooth_criminal import core
 
-    # Simula un historial previo con un tiempo muy alto para provocar mejora ≥5×
-    monkeypatch.setattr(
-        core.memory,
-        "get_execution_history",
-        lambda name: [{"duration": 10.0, "decorator": "@thriller"}],
-    )
-    monkeypatch.setattr(core.memory, "log_execution_stats", lambda *a, **k: None)
+    history = [{"duration": 10.0, "decorator": "@thriller"}]
+
+    def fake_get_history(name):
+        return history
+
+    def fake_log_stats(func_name, input_type, decorator_used, duration):
+        history.append({"duration": duration, "decorator": decorator_used})
+
+    monkeypatch.setattr(core.memory, "get_execution_history", fake_get_history)
+    monkeypatch.setattr(core.memory, "log_execution_stats", fake_log_stats)
 
     core._THRILLER_ANNOUNCED.clear()
 
