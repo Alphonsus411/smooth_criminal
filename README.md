@@ -287,6 +287,15 @@ exportar a `xlsx` instala `openpyxl`.
 
 Próximamente en ReadTheDocs…
 
+## 📦 Empaquetado
+
+Para crear una distribución local y verificar sus metadatos:
+
+```bash
+python -m build
+twine check dist/*
+```
+
 ## 📝 Licencia
 
 MIT © Adolfo González
