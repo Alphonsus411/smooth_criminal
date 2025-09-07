@@ -4,6 +4,8 @@
 
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Alphonsus411/smooth_criminal/HEAD?urlpath=streamlit/examples/benchmark_streamlit.py)
+[![Streamlit](https://static.streamlit.io/badges/streamlit.svg)](https://smooth-criminal-demo.streamlit.app)
 
 ---
 
