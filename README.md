@@ -23,6 +23,8 @@
 | Decorador / Función     | Descripción                                           |
 |-------------------------|--------------------------------------------------------|
 | `@smooth`               | Aceleración con Numba (modo sigiloso y rápido)        |
+| `@vectorized`          | Vectoriza funciones estilo NumPy con *fallback*       |
+| `@guvectorized`        | Generaliza ufuncs con *fallback* seguro               |
 | `@moonwalk`             | Convierte funciones en corutinas `async` sin esfuerzo |
 | `@thriller`             | Benchmark antes y después (con ritmo)                 |
 | `@jam(workers=n)`       | Paralelismo automático con ThreadPoolExecutor         |
@@ -91,6 +93,28 @@ def square(n):
     return [i * i for i in range(n)]
 
 print(square(10))
+````
+
+## 🧮 Vectorización segura
+
+````python
+import numpy as np
+from smooth_criminal import vectorized, guvectorized
+
+
+@vectorized(["float64(float64)"])
+def doble(x):
+    return x * 2
+
+
+@guvectorized(["void(float64[:], float64[:], float64[:])"], "(n),(n)->(n)")
+def suma(a, b, res):
+    for i in range(a.shape[0]):
+        res[i] = a[i] + b[i]
+
+
+print(doble(np.array([1.0, 2.0])))
+print(suma(np.array([1.0, 2.0]), np.array([3.0, 4.0])))
 ````
 
 ## 🧪 CLI interactiva
