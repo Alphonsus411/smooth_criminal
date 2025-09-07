@@ -80,7 +80,18 @@ Antes de ejecutar la librería copia el archivo de ejemplo y ajusta las variable
 cp .env.example .env
 ````
 
-Luego edita `.env` para personalizar valores como `LOG_PATH`.
+Dentro de `.env` puedes definir:
+
+```
+# Ruta donde se guardan las métricas
+LOG_PATH=.smooth_criminal_log.json
+
+# Backend de almacenamiento: json (por defecto), sqlite o tinydb
+SMOOTH_CRIMINAL_STORAGE=json
+```
+
+Para backend `tinydb` instala la dependencia opcional `tinydb` y para exportar a
+`xlsx` instala `openpyxl`.
 
 
 ## 💃 Ejemplo rápido
@@ -151,6 +162,19 @@ smooth-criminal export history.xlsx --format xlsx
 smooth-criminal export history.md --format md
 smooth-criminal export history.json --format json
 ````
+
+## 💾 Backends de almacenamiento
+
+El historial de ejecuciones se guarda usando un backend configurable.
+Selecciona el backend con la variable de entorno `SMOOTH_CRIMINAL_STORAGE`:
+
+````bash
+export SMOOTH_CRIMINAL_STORAGE=sqlite  # json | sqlite | tinydb
+smooth-criminal analyze my_script.py
+````
+
+El backend `sqlite` no requiere extras. Para `tinydb` instala `tinydb` y para
+exportar a `xlsx` instala `openpyxl`.
 
 ## 📚 Documentación
 
