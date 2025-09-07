@@ -29,6 +29,7 @@ from typing import (
 )
 
 from smooth_criminal import memory
+from smooth_criminal.memory import log_execution_stats
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SmoothCriminal")
