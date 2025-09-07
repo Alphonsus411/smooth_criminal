@@ -302,12 +302,18 @@ twine check dist/*
 
 MIT © Adolfo González
 
+Este proyecto incluye bibliotecas de terceros con licencias permisivas, como
+Flet (Apache 2.0), Numba y NumPy (BSD-3-Clause) o Rich (MIT). Consulta
+[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) para el listado completo.
 
-## 🎤 Créditos
+## 🙏 Agradecimientos
 
-- Michael Jackson por la inspiración musical 🕺
-
-- Numba, NumPy, asyncio por la base técnica
-
-- Flet por el dashboard elegante
+| Colaborador / Tecnología | Rol / Licencia |
+|--------------------------|----------------|
+| [Adolfo González](https://github.com/Alphonsus411) | Autor principal |
+| Michael Jackson | Inspiración musical |
+| [Flet](https://flet.dev) (Apache 2.0) | Dashboard visual |
+| [Numba](https://numba.pydata.org) (BSD-3-Clause) | Aceleración JIT |
+| [NumPy](https://numpy.org) (BSD-3-Clause) | Operaciones vectoriales |
+| [Rich](https://rich.readthedocs.io) (MIT) | Salida de consola |
 
