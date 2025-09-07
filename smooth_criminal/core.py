@@ -298,8 +298,10 @@ def thriller(func: Callable[P, T]) -> Callable[P, T]:
         logger.info("🎬 It’s close to midnight… benchmarking begins (Thriller Mode).")
 
         history = memory.get_execution_history(func.__name__)
-        prev = [h["duration"] for h in history if h.get("decorator") == "@thriller"]
-        prev_avg = statistics.mean(prev) if prev else None
+        thriller_durations = [
+            h["duration"] for h in history if h.get("decorator") == "@thriller"
+        ]
+        prev_avg = statistics.mean(thriller_durations) if thriller_durations else None
 
         start = time.perf_counter()
         result = func(*args, **kwargs)
@@ -309,7 +311,12 @@ def thriller(func: Callable[P, T]) -> Callable[P, T]:
             f"🧟 ‘Thriller’ just revealed a performance monster: {duration:.6f} seconds."
         )
 
-        if prev_avg and duration > 0 and prev_avg / duration >= 5 and func.__name__ not in _THRILLER_ANNOUNCED:
+        improvement_ratio = prev_avg / duration if prev_avg and duration > 0 else None
+        if (
+            improvement_ratio
+            and improvement_ratio >= 5
+            and func.__name__ not in _THRILLER_ANNOUNCED
+        ):
             logger.info(
                 "♂ It's close to midnight... and your code just THRILLED the benchmarks."
             )
