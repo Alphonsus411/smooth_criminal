@@ -4,6 +4,7 @@ import importlib.util
 import inspect
 import logging
 import os
+import json
 
 from rich.console import Console
 from rich.logging import RichHandler
@@ -79,9 +80,15 @@ def main():
     jam_parser.add_argument(
         "--reps", type=int, default=1, help="Número de repeticiones del benchmark"
     )
+    jam_parser.add_argument(
+        "--silent",
+        action="store_true",
+        help="Muestra solo el resultado en formato JSON",
+    )
 
     args = parser.parse_args()
-    show_intro()
+    if not getattr(args, "silent", False):
+        show_intro()
 
     if args.command == "analyze":
         analyze_file(args.filepath)
@@ -96,7 +103,7 @@ def main():
     elif args.command == "score":
         handle_score(args.func_name)
     elif args.command == "jam-test":
-        handle_jam_test(args.func_path, args.workers, args.reps)
+        handle_jam_test(args.func_path, args.workers, args.reps, args.silent)
 
     else:
         logger.warning(
@@ -167,13 +174,15 @@ def handle_score(func_name):
         logger.info(f"[bold {color}]Optimization Score: {score}/100[/bold {color}]")
 
 
-def handle_jam_test(func_path: str, workers: int, reps: int) -> None:
+def handle_jam_test(func_path: str, workers: int, reps: int, silent: bool) -> None:
     module_name, func_name = func_path.split(":", 1)
     module = importlib.import_module(module_name)
     func = getattr(module, func_name)
 
     backends = ["thread", "process", "async"]
     args = list(range(workers))
+    if silent:
+        logging.disable(logging.CRITICAL)
 
     totals = {b: 0.0 for b in backends}
     for _ in range(reps):
@@ -182,6 +191,11 @@ def handle_jam_test(func_path: str, workers: int, reps: int) -> None:
             totals[metric["backend"]] += metric["duration"]
 
     averages = {b: totals[b] / reps for b in backends}
+    fastest = min(averages, key=averages.get)
+    if silent:
+        print(json.dumps({"averages": averages, "fastest": fastest}))
+        logging.disable(logging.NOTSET)
+        return
     max_duration = max(averages.values()) or 1.0
 
     console = Console()

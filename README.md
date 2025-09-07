@@ -198,6 +198,12 @@ También puedes comparar rápidamente los backends de `jam` desde la línea de c
 smooth-criminal jam-test paquete.modulo:funcion --workers 4 --reps 3
 ````
 
+Si prefieres un resultado en JSON sin mensajes adicionales, añade `--silent`:
+
+````bash
+smooth-criminal jam-test paquete.modulo:funcion --workers 4 --reps 3 --silent
+````
+
 Esto mostrará una tabla comparativa de tiempos y, al finalizar sin errores, el mensaje especial:
 
 ```
