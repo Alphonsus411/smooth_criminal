@@ -57,6 +57,17 @@ python scripts/example_flet_dashboard.py
 
 - Interfaz elegante con Flet (modo oscuro)
 
+### 🕺 Animación Moonwalk
+
+Activa el interruptor **Moonwalk** para ver cómo un ícono de MJ cruza la
+pantalla y desaparece al finalizar.
+
+Prueba manual:
+
+1. Ejecuta `python -m smooth_criminal.dashboard` o `python scripts/example_flet_dashboard.py`.
+2. Pulsa el interruptor **Moonwalk** en la fila de botones.
+3. Observa al bailarín deslizarse y liberarse automáticamente.
+
 ## ⚙️ Instalación
 
 ````bash
