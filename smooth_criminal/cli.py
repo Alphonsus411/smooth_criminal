@@ -187,6 +187,11 @@ def handle_jam_test(func_path: str, workers: int, reps: int, silent: bool) -> No
     totals = {b: 0.0 for b in backends}
     for _ in range(reps):
         result = benchmark_jam(func, args, backends)
+        if not all(m.get("success") for m in result["metrics"]):
+            logger.error("[red]One or more backends failed during benchmarking.[/red]")
+            if silent:
+                logging.disable(logging.NOTSET)
+            return
         for metric in result["metrics"]:
             totals[metric["backend"]] += metric["duration"]
 
@@ -211,7 +216,7 @@ def handle_jam_test(func_path: str, workers: int, reps: int, silent: bool) -> No
         table.add_row(backend, f"{duration:.4f}", bar)
 
     console.print(table)
-    console.print("🎶 Just jammin' through those CPU cores! 🧠🕺")
+    logger.info("🎶 Just jammin' through those CPU cores! 🧠🕺")
 
 
 if __name__ == "__main__":
