@@ -13,7 +13,7 @@ def test_storage_backends(monkeypatch, tmp_path, backend):
 
     # Limpiar cualquier rastro previo
     if memory.LOG_PATH.exists():
-        memory.clear_execution_history()
+        memory._BACKEND.clear_execution_history()
 
     # Registrar una ejecución
     memory.log_execution_stats("demo", int, "@smooth", 0.001)
@@ -30,7 +30,7 @@ def test_storage_backends(monkeypatch, tmp_path, backend):
     assert score is not None and "Function: demo" in summary
 
     # Limpiar y comprobar
-    assert memory.clear_execution_history()
+    assert memory._BACKEND.clear_execution_history()
     assert not memory.LOG_PATH.exists()
 
     # Restaurar backend por defecto para no afectar a otras pruebas

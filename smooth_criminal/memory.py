@@ -39,9 +39,12 @@ class StorageBackend(ABC):
     def get_execution_history(self, func_name: Optional[str] = None) -> List[Dict]:
         """Obtiene el historial de ejecuciones."""
 
-    @abstractmethod
     def clear_execution_history(self) -> bool:
-        """Limpia por completo el historial."""
+        """Limpia por completo el historial basado en :attr:`self.path`."""
+        if self.path.exists():
+            self.path.unlink()
+            return True
+        return False
 
     def export_execution_history(self, filepath, format: str = "csv") -> bool:
         """Exporta el historial a CSV, JSON, XLSX o Markdown."""
@@ -169,12 +172,6 @@ class JsonBackend(StorageBackend):
             logs = [entry for entry in logs if entry["function"] == func_name]
         return logs
 
-    def clear_execution_history(self) -> bool:
-        if self.path.exists():
-            self.path.unlink()
-            return True
-        return False
-
 
 class SQLiteBackend(StorageBackend):
     """Persistencia utilizando una base de datos SQLite."""
@@ -243,12 +240,6 @@ class SQLiteBackend(StorageBackend):
             for r in rows
         ]
 
-    def clear_execution_history(self) -> bool:
-        if self.path.exists():
-            self.path.unlink()
-            return True
-        return False
-
 
 class TinyDBBackend(StorageBackend):
     """Persistencia mediante TinyDB."""
@@ -291,12 +282,6 @@ class TinyDBBackend(StorageBackend):
             else:
                 results = db.all()
         return list(results)
-
-    def clear_execution_history(self) -> bool:
-        if self.path.exists():
-            self.path.unlink()
-            return True
-        return False
 
 
 # ---------------------------------------------------------------------------
