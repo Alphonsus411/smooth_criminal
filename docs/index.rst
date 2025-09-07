@@ -12,3 +12,6 @@ Bienvenido a la documentación de Smooth Criminal
 
    usage
    api
+   contributing
+
+Para un historial detallado de versiones consulta el `Changelog <../CHANGELOG.md>`_.

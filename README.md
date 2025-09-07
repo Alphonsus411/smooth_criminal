@@ -313,6 +313,8 @@ exportar a `xlsx` instala `openpyxl`.
 
 Próximamente en ReadTheDocs…
 
+Consulta el [changelog](CHANGELOG.md) para conocer el historial completo de versiones.
+
 ## 📦 Empaquetado
 
 Para crear una distribución local y verificar sus metadatos:
