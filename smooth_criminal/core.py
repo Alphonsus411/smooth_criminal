@@ -11,17 +11,49 @@ import asyncio
 import logging
 import time
 from functools import wraps
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    ParamSpec,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    overload,
+    Literal,
+)
 
 from smooth_criminal.memory import log_execution_stats
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SmoothCriminal")
 
-def smooth(func):
+T = TypeVar("T")
+A = TypeVar("A")
+P = ParamSpec("P")
+
+def smooth(func: Callable[P, T]) -> Callable[P, T]:
+    """Compila ``func`` con Numba para acelerar su ejecución.
+
+    Ejemplo
+    -------
+    >>> import logging
+    >>> logging.getLogger("SmoothCriminal").setLevel(logging.CRITICAL)
+    >>> @smooth
+    ... def suma(a: int, b: int) -> int:
+    ...     return a + b
+    >>> suma(2, 3)
+    5
+    """
     try:
         jit_func = jit(nopython=True, cache=True)(func)
 
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             logger.info("You've been hit by... a Smooth Criminal!")
             try:
                 return jit_func(*args, **kwargs)
@@ -31,17 +63,41 @@ def smooth(func):
 
         return wrapper
     except Exception:
-        def fallback(*args, **kwargs):
+        def fallback(*args: P.args, **kwargs: P.kwargs) -> T:
             logger.warning("Beat it! Numba failed. Falling back.")
             return func(*args, **kwargs)
 
         return fallback
 
-def moonwalk(func):
-    """Permite ejecutar funciones sincrónicas o asíncronas de forma asíncrona."""
+@overload
+def moonwalk(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]: ...
+
+
+@overload
+def moonwalk(func: Callable[P, T]) -> Callable[P, Awaitable[T]]: ...
+
+
+def moonwalk(func: Callable[P, Any]) -> Callable[P, Awaitable[T]]:
+    """Permite ejecutar funciones sincrónicas o asíncronas de forma asíncrona.
+
+    Ejemplos
+    --------
+    >>> import asyncio, logging
+    >>> logging.getLogger("SmoothCriminal").setLevel(logging.CRITICAL)
+    >>> @moonwalk
+    ... async def saludar(nombre: str) -> str:
+    ...     return f"Hola {nombre}"
+    >>> asyncio.run(saludar("Ana"))
+    'Hola Ana'
+    >>> @moonwalk
+    ... def doble(x: int) -> int:
+    ...     return x * 2
+    >>> asyncio.run(doble(3))
+    6
+    """
 
     @wraps(func)
-    async def wrapper(*args, **kwargs):
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         logger.info("Moonwalk complete — your async function is now gliding!")
 
         if inspect.iscoroutinefunction(func):
@@ -55,26 +111,54 @@ def moonwalk(func):
 
     return wrapper
 
-def thriller(func):
+def thriller(func: Callable[P, T]) -> Callable[P, T]:
+    """Cronometra la ejecución de ``func`` y registra el tiempo empleado.
+
+    Ejemplo
+    -------
+    >>> import logging
+    >>> logging.getLogger("SmoothCriminal").setLevel(logging.CRITICAL)
+    >>> @thriller
+    ... def cuadrado(x: int) -> int:
+    ...     return x * x
+    >>> cuadrado(4)
+    16
+    """
+
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         logger.info("🎬 It’s close to midnight… benchmarking begins (Thriller Mode).")
         start = time.perf_counter()
         result = func(*args, **kwargs)
         end = time.perf_counter()
-        logger.info(f"🧟 ‘Thriller’ just revealed a performance monster: {end - start:.6f} seconds.")
+        logger.info(
+            f"🧟 ‘Thriller’ just revealed a performance monster: {end - start:.6f} seconds."
+        )
         return result
+
     return wrapper
 
-def jam(workers=4):
+def jam(workers: int = 4) -> Callable[[Callable[[A], T]], Callable[[Sequence[A]], List[T]]]:
+    """Ejecuta ``func`` en paralelo sobre una secuencia de argumentos.
+
+    Ejemplo
+    -------
+    >>> import logging
+    >>> logging.getLogger("SmoothCriminal").setLevel(logging.CRITICAL)
+    >>> @jam(workers=2)
+    ... def cuadrado(x: int) -> int:
+    ...     return x * x
+    >>> sorted(cuadrado([1, 2, 3]))
+    [1, 4, 9]
     """
-    Decorador que permite ejecutar funciones sobre listas en paralelo.
-    """
-    def decorator(func):
+
+    def decorator(func: Callable[[A], T]) -> Callable[[Sequence[A]], List[T]]:
         @wraps(func)
-        def wrapper(args_list):
-            logger.info(f"🎶 Don't stop 'til you get enough... workers! (x{workers})")
-            results = []
+        def wrapper(args_list: Sequence[A]) -> List[T]:
+            logger.info(
+                f"🎶 Don't stop 'til you get enough... workers! (x{workers})"
+            )
+            results: List[T] = []
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 future_to_arg = {executor.submit(func, arg): arg for arg in args_list}
                 for future in as_completed(future_to_arg):
@@ -82,41 +166,62 @@ def jam(workers=4):
                         result = future.result()
                         results.append(result)
                     except Exception as e:
-                        logger.warning(f"Worker failed on input {future_to_arg[future]}: {e}")
+                        logger.warning(
+                            f"Worker failed on input {future_to_arg[future]}: {e}"
+                        )
             return results
+
         return wrapper
+
     return decorator
 
-def black_or_white(mode="auto"):
+Mode = Literal["auto", "light", "precise"]
+
+
+def black_or_white(mode: Mode = "auto") -> Callable[[Callable[P, T]], Callable[P, T]]:
+    """Optimiza los tipos numéricos de ``numpy.ndarray`` antes de ejecutar ``func``.
+
+    Ejemplo
+    -------
+    >>> import numpy as np, logging
+    >>> logging.getLogger("SmoothCriminal").setLevel(logging.CRITICAL)
+    >>> @black_or_white("light")
+    ... def tipo(arr: np.ndarray) -> str:
+    ...     return str(arr.dtype)
+    >>> tipo(np.array([1, 2, 3], dtype=np.int64))
+    'int32'
     """
-    Optimiza tipos numéricos de arrays de entrada: float32/int32 o float64/int64.
-    Modes:
-        - "light": usa float32 / int32
-        - "precise": usa float64 / int64
-        - "auto": decide según el tamaño del array
-    """
-    def decorator(func):
+
+    def decorator(func: Callable[P, T]) -> Callable[P, T]:
         @wraps(func)
-        def wrapper(*args, **kwargs):
-            converted_args = []
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            converted_args: List[Any] = []
             for arg in args:
                 if isinstance(arg, np.ndarray):
                     if mode == "light":
                         arg = _convert_to_light(arg)
-                        logger.info("🌓 It's black or white! Using light types (float32/int32).")
+                        logger.info(
+                            "🌓 It's black or white! Using light types (float32/int32)."
+                        )
                     elif mode == "precise":
                         arg = _convert_to_precise(arg)
                         logger.info("🌕 Going for precision! Using float64/int64.")
                     elif mode == "auto":
                         if arg.size > 1e6:
                             arg = _convert_to_light(arg)
-                            logger.info("🌓 Auto mode: array is large, switching to float32/int32.")
+                            logger.info(
+                                "🌓 Auto mode: array is large, switching to float32/int32."
+                            )
                         else:
                             arg = _convert_to_precise(arg)
-                            logger.info("🌕 Auto mode: small array, using float64/int64.")
+                            logger.info(
+                                "🌕 Auto mode: small array, using float64/int64."
+                            )
                 converted_args.append(arg)
             return func(*converted_args, **kwargs)
+
         return wrapper
+
     return decorator
 
 def _convert_to_light(arr):
@@ -133,49 +238,91 @@ def _convert_to_precise(arr):
         return arr.astype(np.float64)
     return arr
 
-def beat_it(fallback_func=None):
+def beat_it(
+    fallback_func: Optional[Callable[P, T]] = None,
+) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    """Ejecuta ``func`` y usa ``fallback_func`` si ocurre una excepción.
+
+    Ejemplo
+    -------
+    >>> import logging
+    >>> logging.getLogger("SmoothCriminal").setLevel(logging.CRITICAL)
+    >>> def respaldo(x: int) -> int:
+    ...     return -1
+    >>> @beat_it(respaldo)
+    ... def falla(x: int) -> int:
+    ...     raise ValueError("error")
+    >>> falla(3)
+    -1
     """
-    Intenta ejecutar la función principal. Si falla, recurre al fallback.
-    Si no se proporciona fallback, muestra un mensaje y lanza la excepción original.
-    """
-    def decorator(func):
+
+    def decorator(func: Callable[P, T]) -> Callable[P, T]:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             try:
                 return func(*args, **kwargs)
             except Exception as e:
-                logger.warning("🧥 Beat it! Something failed... Switching to fallback.")
+                logger.warning(
+                    "🧥 Beat it! Something failed... Switching to fallback."
+                )
                 if fallback_func:
                     return fallback_func(*args, **kwargs)
-                else:
-                    logger.error("No fallback provided. Rethrowing exception.")
-                    raise e
+                logger.error("No fallback provided. Rethrowing exception.")
+                raise e
+
         return wrapper
+
     return decorator
 
-def bad(parallel=False):
+def bad(parallel: bool = False) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    """Aplica optimizaciones agresivas de Numba a ``func``.
+
+    Ejemplo
+    -------
+    >>> import logging
+    >>> logging.getLogger("SmoothCriminal").setLevel(logging.CRITICAL)
+    >>> @bad(parallel=False)
+    ... def suma(a: float, b: float) -> float:
+    ...     return a + b
+    >>> suma(1.0, 2.0)
+    3.0
     """
-    Aplica optimizaciones agresivas con Numba (fastmath, parallel, cache).
-    Usar con precaución: puede alterar precisión numérica o portabilidad.
-    """
-    def decorator(func):
+
+    def decorator(func: Callable[P, T]) -> Callable[P, T]:
         try:
-            jit_func = jit(nopython=True, fastmath=True, cache=True, parallel=parallel)(func)
+            jit_func = jit(
+                nopython=True, fastmath=True, cache=True, parallel=parallel
+            )(func)
 
             @wraps(func)
-            def wrapper(*args, **kwargs):
-                logger.info("🕶 Who's bad? This function is. Activating aggressive optimizations.")
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+                logger.info(
+                    "🕶 Who's bad? This function is. Activating aggressive optimizations."
+                )
                 return jit_func(*args, **kwargs)
+
             return wrapper
         except Exception as e:
-            logger.warning("Bad mode failed. Reverting to original function. Reason: %s", e)
+            logger.warning(
+                "Bad mode failed. Reverting to original function. Reason: %s", e
+            )
             return func
+
     return decorator
+def dangerous(
+    func: Callable[P, T], *, parallel: bool = True
+) -> Callable[P, T]:
+    """Combina :func:`bad` y :func:`thriller` para optimizar ``func``.
 
-
-def dangerous(func, *, parallel=True):
-    """
-    Modo experimental total: aplica decoradores agresivos y ejecuta benchmark.
+    Ejemplo
+    -------
+    >>> import logging
+    >>> logging.getLogger("SmoothCriminal").setLevel(logging.CRITICAL)
+    >>> @dangerous
+    ... def cubo(x: int) -> int:
+    ...     return x ** 3
+    >>> cubo(2)
+    8
     """
     logger.info("⚠️ Entering Dangerous Mode... Optimizing without mercy.")
 
@@ -185,24 +332,42 @@ def dangerous(func, *, parallel=True):
 
     return func
 
-def _run_once(args):
+def _run_once(
+    args: Tuple[Callable[..., Any], Tuple[Any, ...], Dict[str, Any]]
+) -> float:
     func, func_args, func_kwargs = args
     start = time.perf_counter()
     func(*func_args, **func_kwargs)
     end = time.perf_counter()
     return end - start
 
-def profile_it(func, args=(), kwargs=None, repeat=5, parallel=False):
+
+def profile_it(
+    func: Callable[P, Any],
+    args: Tuple[Any, ...] = (),
+    kwargs: Optional[Dict[str, Any]] = None,
+    repeat: int = 5,
+    parallel: bool = False,
+) -> Dict[str, Union[float, List[float]]]:
+    """Obtiene estadísticas de rendimiento ejecutando ``func`` repetidas veces.
+
+    Ejemplo
+    -------
+    >>> import logging
+    >>> logging.getLogger("SmoothCriminal").setLevel(logging.CRITICAL)
+    >>> def suma(a: int, b: int) -> int:
+    ...     return a + b
+    >>> stats = profile_it(suma, args=(1, 2), repeat=2)
+    >>> sorted(stats.keys())
+    ['best', 'mean', 'runs', 'std_dev']
+    """
     if kwargs is None:
         kwargs = {}
-    """
-    Ejecuta la función varias veces para obtener estadísticas de rendimiento.
-    Si parallel=True, ejecuta en múltiples procesos.
-    """
+
     logger.info("🧪 Profiling in progress... Don't stop 'til you get enough data!")
 
     exec_args = (func, args, kwargs)
-    times = []
+    times: List[float] = []
 
     if parallel:
         with Pool(min(repeat, cpu_count())) as pool:
@@ -217,7 +382,9 @@ def profile_it(func, args=(), kwargs=None, repeat=5, parallel=False):
     std_dev = statistics.stdev(times) if repeat > 1 else 0.0
     best_time = min(times)
 
-    logger.info(f"⏱ Mean: {mean_time:.6f}s | Best: {best_time:.6f}s | Std dev: {std_dev:.6f}s")
+    logger.info(
+        f"⏱ Mean: {mean_time:.6f}s | Best: {best_time:.6f}s | Std dev: {std_dev:.6f}s"
+    )
     return {
         "mean": mean_time,
         "best": best_time,
@@ -225,15 +392,23 @@ def profile_it(func, args=(), kwargs=None, repeat=5, parallel=False):
         "runs": times,
     }
 
-def auto_boost(workers=4, fallback=None):
+def auto_boost(
+    workers: int = 4, fallback: Optional[Callable[P, T]] = None
+) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    """Aplica automáticamente el mejor decorador según el patrón de uso.
+
+    Ejemplo
+    -------
+    >>> import logging
+    >>> logging.getLogger("SmoothCriminal").setLevel(logging.CRITICAL)
+    >>> @auto_boost()
+    ... def cuadrado(x: int) -> int:
+    ...     return x * x
+    >>> sorted(cuadrado([1, 2, 3]))
+    [1, 4, 9]
     """
-    Decorador inteligente que detecta patrones y aplica decoradores óptimos:
-    - Bucle + range() → @smooth
-    - Entrada tipo list o array → @jam
-    - Fallback si falla → @beat_it
-    Además registra los resultados para aprendizaje posterior.
-    """
-    def decorator(func):
+
+    def decorator(func: Callable[P, T]) -> Callable[P, T]:
         use_jam = False
         use_smooth = False
 
@@ -252,14 +427,14 @@ def auto_boost(workers=4, fallback=None):
             logger.warning(f"auto_boost: AST inspection failed: {e}")
 
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             nonlocal use_jam
             input_type = type(args[0]) if args else None
 
             if len(args) == 1 and isinstance(args[0], (list, tuple)):
                 use_jam = True
 
-            boosted = func
+            boosted: Callable[P, T] = func
             decorator_used = "none"
 
             if fallback:
@@ -286,10 +461,11 @@ def auto_boost(workers=4, fallback=None):
                 func_name=func.__name__,
                 input_type=input_type,
                 decorator_used=decorator_used,
-                duration=round(end - start, 6)
+                duration=round(end - start, 6),
             )
 
             return result
 
         return wrapper
+
     return decorator
