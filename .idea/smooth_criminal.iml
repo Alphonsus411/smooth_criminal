@@ -7,7 +7,7 @@
       <excludeFolder url="file://$MODULE_DIR$/dist" />
       <excludeFolder url="file://$MODULE_DIR$/smooth_criminal.egg-info" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.12 (smooth_criminal)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.12 virtualenv at C:\Users\Adolfo\PycharmProjects\FletPlus\.venv" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

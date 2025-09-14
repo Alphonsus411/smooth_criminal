@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "smooth-criminal"
-version = "0.5.0"
+version = "0.6.0"
 description = "Dashboard de análisis de rendimiento con decoradores inteligentes"
 readme = {file = "README.md", "content-type" = "text/markdown"}
 requires-python = ">=3.8"
